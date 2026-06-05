@@ -2,52 +2,79 @@ const API_BASE_URL = import.meta.env.VITE_GLPI_API_URL || '/glpi-api';
 const CLIENT_ID     = import.meta.env.VITE_GLPI_CLIENT_ID;
 const CLIENT_SECRET = import.meta.env.VITE_GLPI_CLIENT_SECRET;
 const GLPI_USER     = import.meta.env.VITE_GLPI_USER;
-const GLPI_PASSWORD = import.meta.env.VITE_GLPI_PASSWORD;
+// const GLPI_PASSWORD = import.meta.env.VITE_GLPI_PASSWORD;
 
 let cachedToken: string | null = null;
 let tokenExpiresAt: number = 0;
 
-export async function getGLPIToken(): Promise<string> {
+export function TokenValide():boolean
+{
   const now = Date.now();
-
   if (cachedToken && now < tokenExpiresAt) {
-    return cachedToken;
+    return true;
   }
+  return false;
+}
 
+export type reponse ={
+  error ?: string;
+  success ?: string;
+}
+
+export async function getGLPIToken(pwd:string): Promise<reponse> {
   if (!CLIENT_ID || !GLPI_USER) {
     throw new Error(
       "Variables d'environnement GLPI incomplètes (.env). " +
       "Vérifiez VITE_GLPI_CLIENT_ID et VITE_GLPI_USER."
     );
   }
+  try {
+    const response = await fetch(`${API_BASE_URL}/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        grant_type:    'password',
+        client_id:     CLIENT_ID,
+        client_secret: CLIENT_SECRET,
+        username:      GLPI_USER,
+        password:      pwd,
+        scope:         'api',
+      }),
+    });
 
-  const response = await fetch(`${API_BASE_URL}/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      grant_type:    'password',
-      client_id:     CLIENT_ID,
-      client_secret: CLIENT_SECRET,
-      username:      GLPI_USER,
-      password:      GLPI_PASSWORD,
-      scope:         'api',
-    }),
-  });
+    if (!response.ok) {
+        let errorMessage = 'Erreur de connexion GLPI';
+        try {
+          const errorData = await response.json();
+          errorMessage =
+            errorData?.message ||
+            errorData?.error ||
+            errorData?.error_description ||
+            errorMessage;
+        } catch {
+          const text = await response.text();
+          if (text) errorMessage = text;
+        }
+        return {
+          error: errorMessage,
+        };
+      }
+    const now = Date.now();
+    const data = await response.json();
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData?.message || `Échec de l'authentification GLPI (HTTP ${response.status})`
-    );
+    cachedToken   = data.access_token;
+    // expires_in est en secondes ; on soustrait 30s de marge
+    tokenExpiresAt = now + (data.expires_in ?? 3600) * 1000 - 30_000;
+
+    // return cachedToken!;
+    return {
+      success: `connexion reussie`,
+    }
+  } catch (error: any) {
+    return {
+      error: error.message || 'Erreur réseau ou serveur GLPI',
+    };
   }
-
-  const data = await response.json();
-
-  cachedToken   = data.access_token;
-  // expires_in est en secondes ; on soustrait 30s de marge
-  tokenExpiresAt = now + (data.expires_in ?? 3600) * 1000 - 30_000;
-
-  return cachedToken!;
 }
 
 async function glpiFetch<T = unknown>(
@@ -56,7 +83,8 @@ async function glpiFetch<T = unknown>(
   body?: unknown,
   options: Omit<RequestInit, 'method' | 'body'> = {}
 ): Promise<T> {
-  const token = await getGLPIToken();
+  const token =cachedToken;
+  
   const url   = `${API_BASE_URL}/v2.3/${path}`;
 
   const headers: Record<string, string> = {
