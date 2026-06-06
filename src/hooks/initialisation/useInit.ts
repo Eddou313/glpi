@@ -1,8 +1,6 @@
 import { useState, useCallback } from 'react';
 import { glpiGet, glpiFetch } from '../../api/db_glpi';
 
-// ─── Types ────────────────────────────────────────────────────────────────
-
 type StepStatus = 'pending' | 'running' | 'done' | 'error';
 
 type Step = {
@@ -18,8 +16,6 @@ export type DeleteState = {
   steps:   Step[];
 };
 
-// ─── Ressources à supprimer ───────────────────────────────────────────────
-
 const RESOURCES = [
   { path: 'Assistance/Ticket',       label: 'Tickets'            },
   { path: 'Assets/Computer',         label: 'Ordinateurs'        },
@@ -30,9 +26,6 @@ const RESOURCES = [
   { path: 'Assets/Phone',            label: 'Téléphones'         },
   { path: 'Assets/Software',         label: 'Logiciels'          },
 ];
-
-// ─── Supprime un par un avec body { input: { id } } ──────────────────────
-// GLPI v2 : DELETE /path/id  +  body { "input": { "id": 1 } }
 
 async function deleteAllOf(path: string): Promise<number> {
   const items = await glpiGet<{ id: number }[]>(
@@ -50,8 +43,6 @@ async function deleteAllOf(path: string): Promise<number> {
 
   return items.length;
 }
-
-// ─── Hook ─────────────────────────────────────────────────────────────────
 
 export function useDeleteAllData() {
   const [state, setState] = useState<DeleteState>({
