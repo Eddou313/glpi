@@ -13,9 +13,9 @@ function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
+          <Route path="/" element={<Test />}></Route>
         {/* backoffice */}
           <Route path="/login" element={<LoginPage />}></Route>
-          <Route path="/" element={<Test />}></Route>
           <Route element={<SecureRoute />}>
             <Route path="/user" element={<UsersPage />} />
             <Route path="/admin" element={<UserList />} />
