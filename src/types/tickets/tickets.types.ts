@@ -1,4 +1,4 @@
-export interface GLPITicket {
+export interface GLPITicketListe {
   id: number;
   name: string;
   content: string;
@@ -88,4 +88,11 @@ export type GLPITicketTeamMember = {
   href: string;
 
   type: string;
+};
+
+export type CreateTicketRequest = {
+  name: string;
+  content: string;
+  urgency: number;
+  items: number[];
 };

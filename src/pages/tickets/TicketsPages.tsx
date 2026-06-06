@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTickets } from "../../hooks/tickets/useTickets";
 import { TicketDetails } from "./TicketDetails";
-import type { GLPITicketDetail } from "../../types/tickets/tickes.types";
+import type { GLPITicketDetail } from "../../types/tickets/tickets.types";
 
 export function TicketsPage() {
   const { tickets, loading, error, detail } = useTickets();

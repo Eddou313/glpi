@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
 import { glpiFetch } from "../../api/db_glpi";
-import type { GLPITicket, GLPITicketDetail } from "../../types/tickets/tickes.types";
+import type { GLPITicketListe, GLPITicketDetail } from "../../types/tickets/tickets.types";
 // service
 export const TicketService = {
   getAll: () =>
-    glpiFetch<GLPITicket[]>("GET", "Assistance/Ticket"),
+    glpiFetch<GLPITicketListe[]>("GET", "Assistance/Ticket"),
 
   getById: (id: number) =>
     glpiFetch<GLPITicketDetail>("GET", `Assistance/Ticket/${id}`),
 };
 // use
 export function useTickets() {
-  const [tickets, setTickets] = useState<GLPITicket[]>([]);
+  const [tickets, setTickets] = useState<GLPITicketListe[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
