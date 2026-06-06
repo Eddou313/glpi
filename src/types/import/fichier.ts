@@ -56,7 +56,7 @@ export const FICHIER2_COLUMNS = [
 export const COLUMNS_DATE_FICHIER2 = ["Date"] as const;
 export const COLUMNS_HEURE_FICHIER2 = ["Date"] as const;
 
-export const COMMANDE_CLIENT_PRODUIT_COLUMNS = [
+export const FICHIER3_COLUMNS = [
     "Num_Ticket",
     "Duration_second",
     "Time_Cost",

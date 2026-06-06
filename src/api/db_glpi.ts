@@ -7,13 +7,13 @@ const GLPI_USER     = import.meta.env.VITE_GLPI_USER;
 let cachedToken: string | null = null;
 let tokenExpiresAt: number = 0;
 
-export function TokenValide():boolean
-{
-  const now = Date.now();
-  if (cachedToken && now < tokenExpiresAt) {
-    return true;
-  }
-  return false;
+export function TokenValide(): boolean {
+  const token = cachedToken || localStorage.getItem("glpi_token");
+  const exp = tokenExpiresAt || Number(localStorage.getItem("glpi_token_exp"));
+
+  if (!token || !exp) return false;
+
+  return Date.now() < exp;
 }
 
 export type reponse ={
@@ -61,12 +61,13 @@ export async function getGLPIToken(pwd:string): Promise<reponse> {
       }
     const now = Date.now();
     const data = await response.json();
-
-    cachedToken   = data.access_token;
     // expires_in est en secondes ; on soustrait 30s de marge
+    cachedToken = data.access_token;
+    if (cachedToken) {
+      localStorage.setItem("glpi_token", cachedToken);
+    }
     tokenExpiresAt = now + (data.expires_in ?? 3600) * 1000 - 30_000;
-
-    // return cachedToken!;
+    localStorage.setItem("glpi_token_exp", tokenExpiresAt.toString());
     return {
       success: `connexion reussie`,
     }
