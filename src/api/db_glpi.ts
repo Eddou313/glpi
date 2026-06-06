@@ -3,13 +3,13 @@ const CLIENT_ID     = import.meta.env.VITE_GLPI_CLIENT_ID;
 const CLIENT_SECRET = import.meta.env.VITE_GLPI_CLIENT_SECRET;
 const GLPI_USER     = import.meta.env.VITE_GLPI_USER;
 
-/*STATE TOKEN (ROBUSTE) */
+// STATE TOKEN 
 
 let cachedToken: string | null = localStorage.getItem("glpi_token");
 
 let tokenExpiresAt: number = Number(localStorage.getItem("glpi_token_exp") || 0);
 
-/*TOKEN VALIDATION  */
+// TOKEN VALIDATION  
 
 export function TokenValide(): boolean {
   const token = cachedToken || localStorage.getItem("glpi_token");
@@ -18,7 +18,7 @@ export function TokenValide(): boolean {
   return !!token && !!exp && Date.now() < exp;
 }
 
-/* LOGIN (GET TOKEN) */
+// LOGIN (GET TOKEN) 
 export type reponse = {
   error?: string;
   success?: string;
@@ -74,10 +74,9 @@ export async function getGLPIToken(pwd: string): Promise<reponse> {
     };
   }
 }
+// CORE FETCH WRAPPER  
 
-/* CORE FETCH WRAPPER  */
-
-async function glpiFetch<T>(
+export async function glpiFetch<T>(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   path: string,
   body?: unknown,
@@ -125,7 +124,7 @@ async function glpiFetch<T>(
   return JSON.parse(text) as T;
 }
 
-/* HELPERS */
+//  HELPERS 
 export const glpiGet = <T>(path: string) => glpiFetch<T>('GET', path);
 
 export const glpiPost = <T>(path: string, body: unknown) => glpiFetch<T>('POST', path, body);
@@ -141,4 +140,9 @@ export function invalidateGLPIToken(): void {
   tokenExpiresAt = 0;
   localStorage.removeItem("glpi_token");
   localStorage.removeItem("glpi_token_exp");
+}
+
+// recuperation token 
+export function getToken() {
+  return cachedToken || localStorage.getItem("glpi_token");
 }
