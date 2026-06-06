@@ -1,0 +1,242 @@
+/* ─── Dashboard GLPI — CSS partagé ──────────────────────────────────────── */
+
+/* Variables */
+:root {
+  --color-primary:    #0ea5e9;
+  --color-primary-dk: #0284c7;
+  --color-border:     #e2e8f0;
+  --color-bg:         #f8fafc;
+  --color-surface:    #ffffff;
+  --color-text:       #0f172a;
+  --color-text-muted: #64748b;
+  --radius-sm:        6px;
+  --radius-md:        10px;
+  --radius-lg:        14px;
+}
+
+/* ── Fenêtre principale ── */
+.glpi-dashboard {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .07);
+  overflow: hidden;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: var(--color-text);
+}
+
+/* ── En-tête ── */
+.glpi-dashboard__header {
+  padding: 1.25rem 1.75rem 0;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.glpi-dashboard__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 1rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+/* ── Navigation par onglets ── */
+.tab-nav {
+  display: flex;
+  gap: 0;
+}
+
+.tab-nav__btn {
+  padding: .6rem 1.5rem;
+  font-size: .875rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+  margin-bottom: -1px; /* colle à la border-bottom du header */
+}
+
+.tab-nav__btn:hover {
+  color: var(--color-text);
+}
+
+.tab-nav__btn--active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* ── Corps ── */
+.glpi-dashboard__body {
+  padding: 1.5rem 1.75rem;
+  min-height: 300px;
+}
+
+/* ── Bandeau total ── */
+.total-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: var(--radius-md);
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.total-banner--ticket {
+  background: #1e40af;
+}
+
+.total-banner__label {
+  font-size: .85rem;
+  font-weight: 500;
+  opacity: .88;
+}
+
+.total-banner__value {
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* ── Groupe tickets ── */
+.ticket-group {
+  margin-bottom: 1.75rem;
+}
+
+.ticket-group:last-child {
+  margin-bottom: 0;
+}
+
+.ticket-group__title {
+  font-size: .78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--color-text-muted);
+  margin: 0 0 .75rem;
+}
+
+/* ── Liste de détail ── */
+.detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+}
+
+.detail-list__header {
+  display: grid;
+  grid-template-columns: 160px 1fr 50px 44px;
+  gap: .75rem;
+  font-size: .72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--color-text-muted);
+  padding: 0 .25rem .4rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* ── Ligne de détail ── */
+.detail-row {
+  display: grid;
+  grid-template-columns: 160px 1fr 50px 44px;
+  gap: .75rem;
+  align-items: center;
+  padding: .45rem .25rem;
+  border-radius: var(--radius-sm);
+  transition: background .12s;
+}
+
+.detail-row:hover {
+  background: var(--color-bg);
+}
+
+.detail-row__label {
+  font-size: .85rem;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail-row__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.detail-row__count {
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: right;
+}
+
+.detail-row__percent {
+  font-size: .8rem;
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+/* ── Barre de progression ── */
+.progress-track {
+  height: 5px;
+  background: var(--color-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 999px;
+  transition: width .35s ease;
+  min-width: 3px;
+}
+
+/* ── États ── */
+.state-msg {
+  color: var(--color-text-muted);
+  padding: 2rem 0;
+  text-align: center;
+  font-size: .9rem;
+}
+
+.state-error {
+  text-align: center;
+  padding: 2rem 0;
+  color: #dc2626;
+  font-size: .9rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .75rem;
+}
+
+.state-error button {
+  padding: .35rem .9rem;
+  border: 1px solid #dc2626;
+  border-radius: var(--radius-sm);
+  color: #dc2626;
+  background: none;
+  cursor: pointer;
+  font-size: .85rem;
+  transition: background .15s;
+}
+
+.state-error button:hover {
+  background: #fef2f2;
+}

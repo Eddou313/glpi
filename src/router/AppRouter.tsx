@@ -8,6 +8,7 @@ import SecureRoute from "./securiter"
 import { TicketsPage } from "../pages/tickets/TicketsPages"
 import { ItemsPage } from "../pages/FrontOffice/elements/ItemsPages"
 import { CreateTicketPage } from "../pages/FrontOffice/Tickets/TicketForm"
+import { DashboardPage } from "../pages/dashbord/DashbordPages"
 
 function AppRouter() {
   return (
@@ -21,6 +22,7 @@ function AppRouter() {
             <Route path="/admin" element={<UserList />} />
             <Route path="/import" element={<Import />} />
             <Route path="/Tickets" element={<TicketsPage />} />
+            <Route path="/Dashboard" element={<DashboardPage />} />
           </Route>
           {/* frontoffice */}
           <Route path="/elements" element={<ItemsPage />}></Route>
