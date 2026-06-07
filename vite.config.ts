@@ -8,7 +8,7 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:3000',
       '/glpi-api': {
-        target: process.env.VITE_SERVER_DOMAINE || 'http://glpi.localhost',
+        target: process.env.VITE_SERVER_DOMAINE || 'http://glpi.local',
         changeOrigin: true,               
         // rewrite: (path) => path.replace(/^\/glpi-api/, '/api'),
         rewrite: (path) => path.replace(/^\/glpi-api/, '/api.php')
