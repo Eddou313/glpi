@@ -4,7 +4,8 @@ export const parseFile = <T>(
     separator: string, // séparateur ";" ou ","
     expectedColumns?: (keyof any)[], // colonnes attendues
     expectedDateColumns?: string[], // colonnes contenant des dates
-    expectedPositiveNumberColumns?: string[] // colonnes contenant des nombres positifs
+    expectedPositiveNumberColumns?: string[], // colonnes contenant des nombres positifs
+    expectedTimeColumns?: string[] // colonnes contenant des heures
 ): Promise<T[]> => {
     return new Promise<T[]>((resolve, reject) => {
 
@@ -14,15 +15,13 @@ export const parseFile = <T>(
             skipEmptyLines: true,
             complete: (results) => {
                 try {
-                    const csvColumns = (results.meta?.fields || [])
-                        .filter(Boolean) as string[];
+                    const csvColumns = (results.meta?.fields || []).filter(Boolean) as string[];
 
                     if (expectedColumns && expectedColumns.length > 0) {
                         validateColumnNames(csvColumns, expectedColumns);
                     }
 
-                    const rows = (results.data as any[])
-                        .filter(row =>
+                    const rows = (results.data as any[]).filter(row =>
                             Object.values(row)
                                 .some(v => v !== '' && v !== null && v !== undefined)
                         );
@@ -52,6 +51,19 @@ export const parseFile = <T>(
                                 if (!isPositiveCsvNumber(rawValue)) {
                                     throw new Error(
                                         `Montant positif obligatoire. Colonne "${numberColumn}", valeur "${rawValue}"`
+                                    );
+                                }
+                            }
+                        }
+                    }
+                    // Validation des heures
+                    if (expectedTimeColumns && expectedTimeColumns.length > 0) {
+                        for (const row of rows) {
+                            for (const timeColumn of expectedTimeColumns) {
+                                const rawValue = String(row?.[timeColumn] ?? "").trim();
+                                if (rawValue && !isValidCsvTime(rawValue)) {
+                                    throw new Error(
+                                        `Format d'heure différent de HH:MM. Colonne "${timeColumn}", valeur "${rawValue}"`
                                     );
                                 }
                             }
@@ -172,4 +184,9 @@ const convertFrenchNumbersInObject = (obj: any): any => {
         );
     }
     return obj;
+};
+// validation heure 
+export const isValidCsvTime = (value: string): boolean => {
+    const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+    return timeRegex.test(value.trim());
 };

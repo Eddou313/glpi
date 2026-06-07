@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { buildImageMapFromZip } from "../../hooks/import/zip";
 import {DeleteDataButton} from "./Initialisation";
-// import { parseFile } from "../../hooks/import/parse";
-// import { FICHIER1_COLUMNS, FICHIER2_COLUMNS, FICHIER3_COLUMNS, type colonneCSV } from "../../types/import/fichier";
+import { parseFile } from "../../hooks/import/parse";
+import { COLUMNS_DATE_FICHIER2, COLUMNS_HEURE_FICHIER2, FICHIER1_COLUMNS, FICHIER2_COLUMNS, FICHIER3_COLUMNS, type colonneCSV } from "../../types/import/fichier";
 
 function Import ()
 {   
@@ -31,12 +31,24 @@ function Import ()
                     sary = await buildImageMapFromZip(zip);
                 } 
             } 
-            // const [parsedCSV1, parsedCSV2, parsedCSV3] = await Promise.all([
-            //     csv1 ? parseFile<colonneCSV["fichier1"]>(csv1, config.separator, FICHIER1_COLUMNS as unknown as (keyof any)[], [...PRODUIT_IMPORT_DATE_COLUMNS], [...PRODUIT_IMPORT_POSITIVE_NUMBER_COLUMNS]) : Promise.resolve([]),
-            //     csv2 ? parseFile<colonneCSV["fichier2"]>(csv2, config.separator, FICHIER2_COLUMNS as unknown as (keyof any)[], [], [...PRODUIT_ATTRIBUT_STOCK_POSITIVE_NUMBER_COLUMNS]) : Promise.resolve([]),
-            //     csv3 ? parseFile<colonneCSV["fichier3"]>(csv3, config.separator, FICHIER3_COLUMNS as unknown as (keyof any)[], [...COMMANDE_CLIENT_PRODUIT_DATE_COLUMNS], []) : Promise.resolve([]),
-            // ]);
+            const [parsedCSV1, parsedCSV2, parsedCSV3] = await Promise.all([
+                csv1 ? parseFile<colonneCSV["fichier1"]>(csv1, config.separator, FICHIER1_COLUMNS as unknown as (keyof any)[], [], [], []) : Promise.resolve([]),
+                csv2 ? parseFile<colonneCSV["fichier2"]>(csv2, config.separator, FICHIER2_COLUMNS as unknown as (keyof any)[], [...COLUMNS_DATE_FICHIER2], [], [...COLUMNS_HEURE_FICHIER2]) : Promise.resolve([]),
+                csv3 ? parseFile<colonneCSV["fichier3"]>(csv3, config.separator, FICHIER3_COLUMNS as unknown as (keyof any)[], [], [], []) : Promise.resolve([]),
+            ]);
 
+            if(parsedCSV1)
+            {
+                console.log(`csv1 : ${parsedCSV1}`);
+            }
+            if(parsedCSV2)
+            {
+                console.log(`csv2 : ${parsedCSV2}`);
+            }
+            if(parsedCSV3)
+            {
+                console.log(`csv3 : ${parsedCSV3}`);
+            }
             
         } catch (error: any) {
             setError(`Erreur lors de l import : ${error.message}`)

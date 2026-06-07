@@ -8,7 +8,6 @@ function SecureRoute() {
   if (!isValid) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
-
   return <Outlet />;
 }
 
