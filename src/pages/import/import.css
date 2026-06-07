@@ -1,0 +1,139 @@
+/* Conteneur global aligné avec le layout de l'application */
+.import-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 800px; /* Aligné au centre sans saturer l'espace de droite */
+  margin: 0 auto;
+}
+
+/* Zone d'initialisation en haut */
+.import-init-zone {
+  width: 100%;
+}
+
+/* Structure en carte épurée */
+.import-card {
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: var(--radius-sm, 6px);
+  padding: 1.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.import-card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text, #1e293b);
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+  padding-bottom: 0.5rem;
+}
+
+/* Formulaire et champs */
+.import-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.import-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.import-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-muted, #64748b);
+}
+
+/* Inputs de type fichier stylisés simplement */
+.import-file {
+  font-size: 0.85rem;
+  color: var(--color-text-muted, #64748b);
+  padding: 0.5rem;
+  border: 1px dashed var(--color-border, #cbd5e1);
+  border-radius: var(--radius-sm, 4px);
+  background: var(--color-bg, #f8fafc);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.import-file:hover:not(:disabled) {
+  border-color: var(--color-primary, #0284c7);
+}
+
+.import-file:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Section Checkbox */
+.import-field-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.import-field-checkbox input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: var(--color-primary, #0284c7);
+}
+
+.import-check-label {
+  font-size: 0.85rem;
+  color: var(--color-text, #334155);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Boutons d'action */
+.import-actions {
+  margin-top: 0.5rem;
+}
+
+.import-button {
+  background: var(--color-primary, #0284c7);
+  color: #ffffff;
+  border: none;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.import-button:hover:not(:disabled) {
+  background: #0369a1; /* Un bleu légèrement plus sombre pour le hover */
+}
+
+.import-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Messages d'alerte et de succès */
+.import-message {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm, 4px);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.import-message--error {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.import-message--success {
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #16a34a;
+}

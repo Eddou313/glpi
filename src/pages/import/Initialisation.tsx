@@ -25,9 +25,6 @@ export function DeleteDataButton() {
 
       <div className="del-widget__header">
         <h3 className="del-widget__title">Suppression des données</h3>
-        <p className="del-widget__subtitle">
-          Supprime définitivement tous les tickets, coûts et éléments de l'inventaire GLPI.
-        </p>
       </div>
 
       {!running && !done && !error && (

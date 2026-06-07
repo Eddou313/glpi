@@ -3,22 +3,26 @@
 /* Layout global */
 .secure-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh; /* 🔒 Fixe la hauteur totale à la taille de l'écran */
   background: var(--color-bg);
   font-family: 'Segoe UI', system-ui, sans-serif;
+  overflow: hidden; /* Empêche la page entière de scroller */
 }
 
 .secure-layout__content {
   flex: 1;
   padding: 2rem 1.75rem;
-  overflow-y: auto;
+  overflow-y: auto; /* 📜 Seul le contenu droit défile si nécessaire */
   min-width: 0;
 }
 
 /* ── Sidebar ── */
 .sidebar {
   width: 220px;
-  min-height: 100vh;
+  height: 100vh; /* Prend toute la hauteur de l'écran */
+  position: sticky; /* 📌 Reste bloqué en haut */
+  top: 0;
+  left: 0;
   background: var(--color-surface);
   border-right: 1px solid var(--color-border);
   display: flex;
@@ -26,6 +30,7 @@
   flex-shrink: 0;
   transition: width .2s ease;
   box-shadow: 1px 0 4px rgba(0,0,0,.04);
+  z-index: 50; /* S'assure que la sidebar reste au-dessus du contenu */
 }
 
 .sidebar--collapsed {
@@ -74,7 +79,7 @@
 .sidebar__nav {
   flex: 1;
   padding: .75rem .5rem;
-  overflow-y: auto;
+  overflow-y: auto; /* Permet aux liens de défiler si l'écran est minuscule */
 }
 
 .sidebar__nav ul {
