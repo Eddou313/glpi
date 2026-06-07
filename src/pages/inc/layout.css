@@ -1,0 +1,307 @@
+/* ─── Variables (reprend le même système que dashboard.css) ──────────────── */
+:root {
+  --color-primary:    #0ea5e9;
+  --color-primary-dk: #0284c7;
+  --color-border:     #e2e8f0;
+  --color-bg:         #f8fafc;
+  --color-surface:    #ffffff;
+  --color-text:       #0f172a;
+  --color-text-muted: #64748b;
+  --radius-sm:        6px;
+  --radius-md:        10px;
+  --radius-lg:        14px;
+}
+
+/* ─── Layout global ──────────────────────────────────────────────────────── */
+
+.front-layout {
+  min-height: 100vh;
+  background: var(--color-bg);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: var(--color-text);
+}
+
+.front-layout__content {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+/* ─── Navbar frontoffice (horizontale en haut) ───────────────────────────── */
+
+.front-navbar {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  height: 56px;
+  padding: 0 1.5rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.front-navbar__brand {
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: .02em;
+  flex-shrink: 0;
+}
+
+.front-navbar__links {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+}
+
+.front-navbar__link {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .4rem .85rem;
+  border-radius: var(--radius-sm);
+  font-size: .855rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: background .12s, color .12s;
+}
+
+.front-navbar__link:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.front-navbar__link--active {
+  background: #e0f2fe;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* ─── Page commune : titre de section ───────────────────────────────────── */
+
+.page-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 1.5rem;
+}
+
+/* ─── ItemsPage ──────────────────────────────────────────────────────────── */
+
+/* Barre de filtres */
+.items-filters {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+}
+
+.items-filters__field {
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+}
+
+.items-filters__field label {
+  font-size: .75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--color-text-muted);
+}
+
+.items-filters__field input {
+  padding: .4rem .75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: .855rem;
+  color: var(--color-text);
+  background: var(--color-bg);
+  outline: none;
+  transition: border-color .15s;
+  width: 160px;
+}
+
+.items-filters__field input:focus {
+  border-color: var(--color-primary);
+  background: var(--color-surface);
+}
+
+/* Tableau */
+.items-table-wrap {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .875rem;
+}
+
+.items-table thead tr {
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.items-table th {
+  padding: .65rem 1rem;
+  text-align: left;
+  font-size: .72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--color-text-muted);
+}
+
+.items-table td {
+  padding: .65rem 1rem;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.items-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.items-table tbody tr:hover td {
+  background: var(--color-bg);
+}
+
+/* ─── CreateTicketPage ───────────────────────────────────────────────────── */
+
+.ticket-form {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.ticket-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+}
+
+.ticket-form__field label {
+  font-size: .78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--color-text-muted);
+}
+
+.ticket-form__field input,
+.ticket-form__field textarea {
+  padding: .55rem .85rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: .875rem;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-bg);
+  outline: none;
+  resize: vertical;
+  transition: border-color .15s;
+}
+
+.ticket-form__field input:focus,
+.ticket-form__field textarea:focus {
+  border-color: var(--color-primary);
+  background: var(--color-surface);
+}
+
+.ticket-form__section-title {
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+  padding-bottom: .5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Tableau de sélection des éléments */
+.ticket-items-table-wrap {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.ticket-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .875rem;
+}
+
+.ticket-items-table thead tr {
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ticket-items-table th {
+  padding: .6rem 1rem;
+  text-align: left;
+  font-size: .72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--color-text-muted);
+}
+
+.ticket-items-table td {
+  padding: .6rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.ticket-items-table tbody tr:last-child td { border-bottom: none; }
+.ticket-items-table tbody tr:hover td      { background: var(--color-bg); }
+
+.ticket-items-table input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+/* Bouton soumettre */
+.ticket-form__submit {
+  align-self: flex-start;
+  padding: .6rem 1.5rem;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: .875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.ticket-form__submit:hover    { background: var(--color-primary-dk); }
+.ticket-form__submit:disabled { opacity: .6; cursor: not-allowed; }
+
+/* ─── États loading / error ──────────────────────────────────────────────── */
+
+.state-loading,
+.state-error {
+  padding: 2rem;
+  text-align: center;
+  font-size: .9rem;
+  color: var(--color-text-muted);
+}
+
+.state-error { color: #dc2626; }

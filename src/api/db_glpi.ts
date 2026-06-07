@@ -2,6 +2,7 @@ const API_BASE_URL = import.meta.env.VITE_GLPI_API_URL || '/glpi-api';
 const CLIENT_ID     = import.meta.env.VITE_GLPI_CLIENT_ID;
 const CLIENT_SECRET = import.meta.env.VITE_GLPI_CLIENT_SECRET;
 const GLPI_USER     = import.meta.env.VITE_GLPI_USER;
+const jeton = import.meta.env.VITE_GLPI_USER_TOKEN;
 
 // STATE TOKEN 
 
@@ -80,11 +81,9 @@ export async function glpiFetch<T>(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   path: string,
   body?: unknown,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<T> {
-
-  const token =
-    cachedToken || localStorage.getItem("glpi_token");
+  const token = cachedToken || jeton ||localStorage.getItem("glpi_token");
 
   if (!token) {
     throw new Error("Aucun token GLPI disponible (non connecté)");
@@ -97,6 +96,7 @@ export async function glpiFetch<T>(
     Accept: 'application/json',
     ...(options.headers as Record<string, string> ?? {})
   };
+  
 
   if (method !== 'GET') {
     headers['Content-Type'] = 'application/json';

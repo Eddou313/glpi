@@ -9,6 +9,7 @@ import { TicketsPage } from "../pages/tickets/TicketsPages"
 import { ItemsPage } from "../pages/FrontOffice/elements/ItemsPages"
 import { CreateTicketPage } from "../pages/FrontOffice/Tickets/TicketForm"
 import { DashboardPage } from "../pages/dashbord/DashbordPages"
+import { FrontOfficeLayout } from "../pages/inc/layout"
 
 function AppRouter() {
   return (
@@ -21,12 +22,14 @@ function AppRouter() {
             <Route path="/user" element={<UsersPage />} />
             <Route path="/admin" element={<UserList />} />
             <Route path="/import" element={<Import />} />
-            <Route path="/Tickets" element={<TicketsPage />} />
+            <Route path="/tickets" element={<TicketsPage />} />
             <Route path="/Dashboard" element={<DashboardPage />} />
           </Route>
           {/* frontoffice */}
-          <Route path="/elements" element={<ItemsPage />}></Route>
-          <Route path="/Tickets/create" element={<CreateTicketPage />}></Route>
+          <Route element={<FrontOfficeLayout />}>
+            <Route path="/elements"       element={<ItemsPage />} />
+            <Route path="/tickets/create" element={<CreateTicketPage />} />
+          </Route>
 
       </Routes>
     </BrowserRouter>

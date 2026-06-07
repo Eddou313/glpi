@@ -6,7 +6,7 @@ import './nav.css';
 
 const NAV_LINKS = [
   { to: '/Dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
-  { to: '/Tickets',   label: 'Tickets',          icon: Ticket          },
+  { to: '/tickets',   label: 'Tickets',          icon: Ticket          },
   { to: '/import',    label: 'Import',            icon: FileInput       },
   // { to: '/user',      label: 'Utilisateurs',      icon: Users           },
   // { to: '/admin',     label: 'Admin',             icon: Package         },
