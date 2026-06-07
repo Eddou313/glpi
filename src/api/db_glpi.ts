@@ -2,15 +2,10 @@ const API_BASE_URL = import.meta.env.VITE_GLPI_API_URL || '/glpi-api';
 const CLIENT_ID     = import.meta.env.VITE_GLPI_CLIENT_ID;
 const CLIENT_SECRET = import.meta.env.VITE_GLPI_CLIENT_SECRET;
 const GLPI_USER     = import.meta.env.VITE_GLPI_USER;
-const jeton = import.meta.env.VITE_GLPI_USER_TOKEN;
-
-// STATE TOKEN 
 
 let cachedToken: string | null = localStorage.getItem("glpi_token");
 
 let tokenExpiresAt: number = Number(localStorage.getItem("glpi_token_exp") || 0);
-
-// TOKEN VALIDATION  
 
 export function TokenValide(): boolean {
   const token = cachedToken || localStorage.getItem("glpi_token");
@@ -19,7 +14,6 @@ export function TokenValide(): boolean {
   return !!token && !!exp && Date.now() < exp;
 }
 
-// LOGIN (GET TOKEN) 
 export type reponse = {
   error?: string;
   success?: string;
@@ -75,7 +69,6 @@ export async function getGLPIToken(pwd: string): Promise<reponse> {
     };
   }
 }
-// CORE FETCH WRAPPER  
 
 export async function glpiFetch<T>(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
@@ -83,7 +76,7 @@ export async function glpiFetch<T>(
   body?: unknown,
   options: RequestInit = {},
 ): Promise<T> {
-  const token = cachedToken || jeton ||localStorage.getItem("glpi_token");
+  const token = cachedToken ||localStorage.getItem("glpi_token");
 
   if (!token) {
     throw new Error("Aucun token GLPI disponible (non connecté)");
@@ -124,7 +117,6 @@ export async function glpiFetch<T>(
   return JSON.parse(text) as T;
 }
 
-//  HELPERS 
 export const glpiGet = <T>(path: string) => glpiFetch<T>('GET', path);
 
 export const glpiPost = <T>(path: string, body: unknown) => glpiFetch<T>('POST', path, body);

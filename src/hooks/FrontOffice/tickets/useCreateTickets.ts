@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { glpiFetch } from "../../../api/db_glpi";
 import type { CreateTicketRequest } from "../../../types/tickets/tickets.types";
+import { glpiFetchClient } from "../../../api/db_client";
 
 const TicketService = {
   create: (body: CreateTicketRequest) =>
-    glpiFetch(
+    glpiFetchClient(
       "POST",
       "Assistance/Ticket",
       body

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { glpiFetch } from "../../../api/db_glpi";
 import type { GLPIItem } from "../../../types/elements/items.types";
+import { glpiFetchClient } from "../../../api/db_client";
 
 export function useItems() {
   const [items, setItems] = useState<GLPIItem[]>([]);
@@ -11,12 +11,7 @@ export function useItems() {
     try {
       setLoading(true);
       setError(null);
-
-      const data = await glpiFetch<GLPIItem[]>(
-        "GET",
-        "Assets/Computer"
-      );
-
+      const data = await glpiFetchClient<GLPIItem[]>("GET", "Assets/Computer");
       setItems(data ?? []);
     } catch (e: any) {
       setError(

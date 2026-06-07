@@ -94,5 +94,10 @@ export type CreateTicketRequest = {
   name: string;
   content: string;
   urgency: number;
-  items: number[];
+  impact: number;
+  category?: {
+    id: number;
+  };
+  
+  items?: number[]; 
 };

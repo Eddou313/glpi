@@ -1,0 +1,101 @@
+
+.ticket-form {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Grilles flexibles pour l'Urgence et l'Impact côte à côte */
+.ticket-form__row {
+  display: flex;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .ticket-form__row {
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+}
+
+.ticket-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  flex: 1; /* Permet un étalement uniforme dans les conteneurs flex-row */
+}
+
+.ticket-form__field label {
+  font-size: .78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--color-text-muted);
+}
+
+/* Uniformisation des inputs, selects et textareas pour Catégories, Urgence, Impact et Datalist */
+.ticket-form__field input,
+.ticket-form__field select,
+.ticket-form__field textarea {
+  padding: .55rem .85rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: .875rem;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-bg);
+  outline: none;
+  resize: vertical;
+  transition: border-color .15s, background-color .15s, box-shadow .15s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Style spécifique pour les balises de sélection (Select) pour ajouter une icône personnalisée propre */
+.ticket-form__field select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right .85rem center;
+  background-size: 1rem;
+  padding-right: 2.5rem; /* Evite que le texte passe sous l'icône de flèche */
+  cursor: pointer;
+}
+
+/* États de focus et interaction pour l'intégralité des contrôles */
+.ticket-form__field input:focus,
+.ticket-form__field select:focus,
+.ticket-form__field textarea:focus {
+  border-color: var(--color-primary);
+  background: var(--color-surface);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15); /* Légère lueur bleu primaire */
+}
+
+/* État désactivé (utile pendant le chargement des catégories ou de la soumission) */
+.ticket-form__field select:disabled,
+.ticket-form__field input:disabled {
+  background: #f1f5f9;
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+  cursor: not-allowed;
+}
+
+/* Message d'erreur localisé pour le chargement des catégories */
+.ticket-form__field-error {
+  font-size: .8rem;
+  color: #dc2626;
+  font-weight: 500;
+  margin-top: .15rem;
+}
+
+/* Ajustements pour l'input lié au Datalist (Élément) */
+.ticket-form__field input[list] {
+  cursor: text;
+}
