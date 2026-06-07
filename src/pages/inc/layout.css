@@ -305,3 +305,52 @@
 }
 
 .state-error { color: #dc2626; }
+
+/* Navbar : brand à gauche, liens au centre, admin à droite */
+.front-navbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: 56px;
+  padding: 0 1.5rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.front-navbar__brand {
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: .02em;
+}
+
+.front-navbar__links {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+}
+
+.front-navbar__admin {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .4rem .85rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: .82rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  margin-left: auto;           /* pousse vers la droite */
+  transition: background .15s, color .15s, border-color .15s;
+}
+
+.front-navbar__admin:hover {
+  background: #f0f9ff;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}

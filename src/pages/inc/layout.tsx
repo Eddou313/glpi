@@ -1,15 +1,18 @@
 import { Outlet, NavLink } from "react-router-dom";
-import { Monitor, PlusCircle } from "lucide-react";
+import { Monitor, PlusCircle, ShieldCheck } from "lucide-react";
 import "./layout.css";
+
 const NAV_LINKS = [
-  { to: "/elements",        label: "Éléments",       icon: Monitor     },
-  { to: "/tickets/create",  label: "Créer un ticket", icon: PlusCircle  },
+  { to: "/elements",       label: "Éléments",        icon: Monitor    },
+  { to: "/tickets/create", label: "Créer un ticket",  icon: PlusCircle },
 ];
 
 function FrontNavbar() {
   return (
     <header className="front-navbar">
+
       <div className="front-navbar__brand">Portail</div>
+
       <nav className="front-navbar__links">
         {NAV_LINKS.map(({ to, label, icon: Icon }) => (
           <NavLink
@@ -24,6 +27,12 @@ function FrontNavbar() {
           </NavLink>
         ))}
       </nav>
+
+      <NavLink to="/login" className="front-navbar__admin">
+        <ShieldCheck size={16} strokeWidth={1.75} />
+        <span>Administration</span>
+      </NavLink>
+
     </header>
   );
 }

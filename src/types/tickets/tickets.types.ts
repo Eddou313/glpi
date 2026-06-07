@@ -2,7 +2,7 @@ export interface GLPITicketListe {
   id: number;
   name: string;
   content: string;
-  status: number;
+  status:   { id: number; name: string } | number;
   urgency: number;
   priority: number;
   date: string;
