@@ -36,7 +36,7 @@ function Import() {
                     sary = await buildImageMapFromZip(zip);
                 } 
             } 
-            console.log(`sary : ${sary}`);
+            console.log("sary : ", sary);
             
             const [parsedCSV1, parsedCSV2, parsedCSV3] = await Promise.all([
                 csv1 ? parseFile<colonneCSV["fichier1"]>(csv1, config.separator, FICHIER1_COLUMNS as unknown as (keyof any)[], [], [], []) : Promise.resolve([]),
@@ -44,10 +44,10 @@ function Import() {
                 csv3 ? parseFile<colonneCSV["fichier3"]>(csv3, config.separator, FICHIER3_COLUMNS as unknown as (keyof any)[], [], [], []) : Promise.resolve([]),
             ]);
 
-            if(parsedCSV1) console.log(`csv1 : ${parsedCSV1}`);
-            if(parsedCSV2) console.log(`csv2 : ${parsedCSV2}`);
-            if(parsedCSV3) console.log(`csv3 : ${parsedCSV3}`);
-            
+            if(parsedCSV1) console.log("csv1 : ", parsedCSV1);
+            if(parsedCSV2) console.log("csv2 : ", parsedCSV2);
+            if(parsedCSV3) console.log("csv3 : ", parsedCSV3);
+
             setMes("Données importées avec succès !");
         } catch (err: any) {
             setError(`Erreur lors de l'import : ${err.message}`);
