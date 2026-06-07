@@ -104,3 +104,29 @@
 
 .del-result--success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
 .del-result--error   { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+
+/* Conteneur de la barre */
+.del-progress-bar-wrapper {
+  background-color: #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  height: 12px;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+/* La barre qui avance */
+.del-progress-bar {
+  background-color: #22c55e; /* Vert succès (ou change pour la couleur de ton choix) */
+  height: 100%;
+  transition: width 0.3s ease-in-out; /* Animation fluide de l'avancement */
+  width: 0%;
+}
+
+.del-progress-text {
+  font-size: 0.85rem;
+  color: #666;
+  display: block;
+  margin-bottom: 15px;
+  text-align: right;
+}
