@@ -20,7 +20,7 @@ function Import ()
     const Importer = async () =>{
         if (!csv1 &&  !csv2 &&  !csv3) {
             setError("Importer au moins une fichier");
-            return;
+            // return;
         }
 
         try {
@@ -57,7 +57,7 @@ function Import ()
         console.log(`import`);
         setMes("donner importer avec succer!");
         setImporting(true);
-        return;
+        // return;
     };
     return (
         <div>
