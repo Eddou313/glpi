@@ -1,22 +1,37 @@
 import { useState } from "react";
 import { useItems } from "../../../hooks/FrontOffice/elements/useItems";
+import { useAssetTypes } from "../../../hooks/itemsTypes/useItemsTypes";
 
 export function ItemsPage() {
   const { items, loading, error } = useItems();
 
-  const [id,   setId]   = useState("");
+  const [id, setId] = useState("");
   const [name, setName] = useState("");
   const [type, setType] = useState("");
+  const { assetTypes } = useAssetTypes();
 
   const filteredItems = items.filter((item) => {
-    const matchId   = id   === "" || item.id.toString().includes(id);
-    const matchName = name === "" || item.name?.toLowerCase().includes(name.toLowerCase());
-    const matchType = type === "" || item.type?.toLowerCase().includes(type.toLowerCase());
+    const matchId =
+      id === "" ||
+      item.id.toString().includes(id);
+
+    const matchName =
+      name === "" ||
+      (item.name ?? "")
+        .toLowerCase()
+        .includes(name.toLowerCase());
+
+    const matchType =
+      type === "" ||
+      item.itemType
+        .toLowerCase()
+        .includes(type.toLowerCase());
+
     return matchId && matchName && matchType;
   });
 
   if (loading) return <p className="state-loading">Chargement...</p>;
-  if (error)   return <p className="state-error">{error}</p>;
+  if (error) return <p className="state-error">{error}</p>;
 
   return (
     <div>
@@ -26,7 +41,7 @@ export function ItemsPage() {
       <div className="items-filters">
         <div className="items-filters__field">
           <label>ID</label>
-          <input value={id}   onChange={(e) => setId(e.target.value)}   placeholder="Filtrer..." />
+          <input value={id} onChange={(e) => setId(e.target.value)} placeholder="Filtrer..." />
         </div>
         <div className="items-filters__field">
           <label>Nom</label>
@@ -34,7 +49,23 @@ export function ItemsPage() {
         </div>
         <div className="items-filters__field">
           <label>Type</label>
-          <input value={type} onChange={(e) => setType(e.target.value)} placeholder="Filtrer..." />
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+          >
+            <option value="">
+              Tous les types
+            </option>
+
+            {assetTypes.map((assetType) => (
+              <option
+                key={assetType.itemtype}
+                value={assetType.itemtype}
+              >
+                {assetType.name}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -50,10 +81,10 @@ export function ItemsPage() {
           </thead>
           <tbody>
             {filteredItems.map((item) => (
-              <tr key={item.id}>
+              <tr key={`${item.itemType}-${item.id}`}>
                 <td>{item.id}</td>
-                <td>{item.name}</td>
-                <td>{item.type}</td>
+                <td>{item.name ?? "-"}</td>
+                <td>{item.itemType}</td>
               </tr>
             ))}
           </tbody>
