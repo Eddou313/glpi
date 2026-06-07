@@ -4,6 +4,7 @@ import { DeleteDataButton } from "./Initialisation";
 import { parseFile } from "../../hooks/import/parse";
 import { COLUMNS_DATE_FICHIER2, COLUMNS_HEURE_FICHIER2, FICHIER1_COLUMNS, FICHIER2_COLUMNS, FICHIER3_COLUMNS, type colonneCSV } from "../../types/import/fichier";
 import "./import.css"; 
+import { UseImages } from "../../hooks/import/UseImages";
 
 function Import() {   
     const [config] = useState({ separator: ',', encoding: 'UTF-8', skipHeader: true });
@@ -17,6 +18,7 @@ function Import() {
     const [error, setError] = useState("");
     const [importing, setImporting] = useState<boolean>(false);
 
+    const { cleanImageMap } = UseImages();
     const Importer = async () => {
         setError("");
         setMes("");
@@ -34,6 +36,7 @@ function Import() {
                 sary = new Map<string, { blob: Blob; fileName: string }>();
                 if (zip) {
                     sary = await buildImageMapFromZip(zip);
+                    sary = cleanImageMap(sary);
                 } 
             } 
             console.log("sary : ", sary);
