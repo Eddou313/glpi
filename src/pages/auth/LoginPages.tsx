@@ -23,7 +23,7 @@ export function LoginPage() {
 
       if (response.success) {
         setMes(response.success);
-        navigate("/admin");
+        navigate("/import");
       }
     } catch (err: any) {
       setMes(err.message || 'Erreur inconnue');
