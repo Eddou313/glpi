@@ -12,11 +12,12 @@ export function useCategory() {
         try {
             setLoading(true);
             setError(null);
+            const data: GLPICategory[] = [];
 
-            const data = await glpiFetch<GLPICategory[]>(
-                "GET",
-                "ITILCategory"
-            );
+            // const data = await glpiFetch<GLPICategory[]>(
+                // "GET",
+                // "ITILCategory"
+            // );
 
             setCategories(data ?? []);
         } catch (e: any) {
