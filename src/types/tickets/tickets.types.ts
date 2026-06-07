@@ -2,7 +2,7 @@ export interface GLPITicketListe {
   id: number;
   name: string;
   content: string;
-  status:   { id: number; name: string } | number;
+  status: { id: number; name: string } | number;
   urgency: number;
   priority: number;
   date: string;
@@ -93,11 +93,35 @@ export type GLPITicketTeamMember = {
 export type CreateTicketRequest = {
   name: string;
   content: string;
+
   urgency: number;
   impact: number;
+
   category?: {
     id: number;
   };
-  
-  items?: number[]; 
+
+  location?: {
+    id: number;
+  };
+
+  request_type?: {
+    id: number;
+  };
+
+  user_recipient?: {
+    id: number;
+  };
+
+  user_editor?: {
+    id: number;
+  };
+
+  type?: number;
+  priority?: number;
+
+  items?: {
+    id: number;
+    itemtype: string;
+  }[];
 };
