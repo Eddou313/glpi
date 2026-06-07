@@ -1,4 +1,4 @@
-import type { GLPITicket } from "../../types/tickets/tickets.types";
+// import type { GLPITicket } from "../../types/tickets/tickets.types";
 export function TicketDetails({ ticket }: any) {
   return (
     <pre>

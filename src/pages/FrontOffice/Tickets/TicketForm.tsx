@@ -4,7 +4,7 @@ import { useCreateTicket } from "../../../hooks/FrontOffice/tickets/useCreateTic
 
 export function CreateTicketPage() {
   const { items } = useItems();
-  const { create, loading, error } = useCreateTicket();
+  const { create} = useCreateTicket();
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");

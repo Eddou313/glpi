@@ -31,6 +31,7 @@ function Import ()
                     sary = await buildImageMapFromZip(zip);
                 } 
             } 
+            console.log(`sary : ${sary}`);
             const [parsedCSV1, parsedCSV2, parsedCSV3] = await Promise.all([
                 csv1 ? parseFile<colonneCSV["fichier1"]>(csv1, config.separator, FICHIER1_COLUMNS as unknown as (keyof any)[], [], [], []) : Promise.resolve([]),
                 csv2 ? parseFile<colonneCSV["fichier2"]>(csv2, config.separator, FICHIER2_COLUMNS as unknown as (keyof any)[], [...COLUMNS_DATE_FICHIER2], [], [...COLUMNS_HEURE_FICHIER2]) : Promise.resolve([]),

@@ -10,7 +10,8 @@ export default defineConfig({
       '/glpi-api': {
         target: process.env.VITE_SERVER_DOMAINE || 'http://glpi.localhost',
         changeOrigin: true,               
-        rewrite: (path) => path.replace(/^\/glpi-api/, '/api.php'),
+        // rewrite: (path) => path.replace(/^\/glpi-api/, '/api'),
+        rewrite: (path) => path.replace(/^\/glpi-api/, '/api')
         // Si votre GLPI est en HTTPS avec un cert auto-signé, décommentez :
         // secure: false,
       },
