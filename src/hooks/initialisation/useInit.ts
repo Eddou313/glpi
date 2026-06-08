@@ -1,5 +1,8 @@
 import { useState, useCallback } from 'react';
 import { glpiGet, glpiFetch } from '../../api/db_glpi';
+import { deleteAllLocations } from './deleteLocation';
+import { deleteAllDropdowns } from './deleteAll';
+import { MODEL_ENDPOINT_MAP } from '../import/fichier1_test/glpi';
 
 type StepStatus = 'pending' | 'running' | 'done' | 'error';
 
@@ -16,10 +19,6 @@ export type DeleteState = {
   steps: Step[];
 };
 
-/* =========================
-   RESOURCES (ASSETS + TICKETS)
-========================= */
-
 const RESOURCES = [
   { path: 'Assistance/Ticket', label: 'Tickets' },
   { path: 'Assets/Computer', label: 'Ordinateurs' },
@@ -31,47 +30,36 @@ const RESOURCES = [
   { path: 'Assets/Software', label: 'Logiciels' },
 ];
 
-/* =========================
-   USERS PROTECTED
-========================= */
-
-const PROTECTED_USERS = new Set([
-  'glpi',
-  'post-only',
-  'tech',
-  'normal',
-]);
-
-/* =========================
-   GENERIC DELETE
-========================= */
-
 async function deleteAllOf(path: string): Promise<number> {
   const items = await glpiGet<{ id: number }[]>(
     `${path}?range=0-9999&fields=id`
-  ).catch(() => [] as { id: number }[]);
+  ).catch(() => []);
 
   if (!items.length) return 0;
 
-  await Promise.all(
-    items.map(item =>
-      glpiFetch('DELETE', `${path}/${item.id}`, {
-        input: { id: item.id },
-      }).catch(() => null)
-    )
-  );
+  let deleted = 0;
 
-  return items.length;
+  for (const item of items) {
+    try {
+      await glpiFetch(
+        'DELETE',
+        `${path}/${item.id}`,
+        { input: { id: item.id } }
+      );
+      deleted++;
+    } catch {
+      // ignorer les erreurs individuelles
+    }
+  }
+
+  return deleted;
 }
-
-/* =========================
-   USERS DELETE (SAFE)
-========================= */
 
 async function deleteAllUsersExceptSystem(): Promise<number> {
   const users = await glpiGet<any[]>(
-    `Administration/User?range=0-9999&fields=id,name,login`
+    'Administration/User?range=0-9999&fields=id,name,login'
   ).catch(() => []);
+
   const SAFE_USERS = new Set([
     'glpi',
     'post-only',
@@ -80,38 +68,51 @@ async function deleteAllUsersExceptSystem(): Promise<number> {
   ]);
 
   const toDelete = users.filter(u => {
-    const login = (u.login || u.name || '').toLowerCase();
+    const login = String(
+      u.login ?? u.name ?? ''
+    ).toLowerCase();
+
     if (SAFE_USERS.has(login)) return false;
-    if ([1, 2, 3, 6].includes(u.id)) return false;
+
+    // utilisateurs protégés GLPI
+    if ([1, 2, 3, 6].includes(Number(u.id))) {
+      return false;
+    }
 
     return true;
   });
 
-  let deletedCount = 0;
+  let deleted = 0;
 
-  for (const u of toDelete) {
+  for (const user of toDelete) {
     try {
       await glpiFetch(
         'DELETE',
-        `Administration/User/${u.id}`,
-        { input: { id: u.id } }
+        `Administration/User/${user.id}`,
+        { input: { id: user.id } }
       );
 
-      deletedCount++;
+      deleted++;
     } catch (err: any) {
-      const msg = err?.message || '';
-      if (msg.includes('ERROR_RIGHT_MISSING') || msg.includes('403')) {
+      const msg = String(err?.message ?? '');
+
+      if (
+        msg.includes('ERROR_RIGHT_MISSING') ||
+        msg.includes('403')
+      ) {
         continue;
       }
+
+      console.error(
+        'Erreur suppression user',
+        user.id,
+        err
+      );
     }
   }
 
-  return deletedCount;
+  return deleted;
 }
-
-/* =========================
-   HOOK
-========================= */
 
 export function useDeleteAllData() {
   const [state, setState] = useState<DeleteState>({
@@ -128,91 +129,191 @@ export function useDeleteAllData() {
         status: 'pending' as StepStatus,
       })),
       {
-        label: 'Utilisateurs (hors système)',
-        status: 'pending' as StepStatus,
+        label: 'Utilisateurs',
+        status: 'pending',
+      },
+      {
+        label: 'Locations',
+        status: 'pending',
+      },
+      {
+        label: 'Fabricants',
+        status: 'pending',
+      },
+      {
+        label: 'Modèles',
+        status: 'pending',
       },
     ];
 
-    setState({ running: true, done: false, error: null, steps: [...steps] });
-
-    /* =========================
-       1. ASSETS + TICKETS
-    ========================= */
-
-    for (let i = 0; i < RESOURCES.length; i++) {
-      steps[i] = { ...steps[i], status: 'running' };
-      setState(s => ({ ...s, steps: [...steps] }));
-
-      try {
-        const count = await deleteAllOf(RESOURCES[i].path);
-
-        steps[i] = {
-          ...steps[i],
-          status: 'done',
-          detail: `${count} supprimé(s)`,
-        };
-      } catch (err: any) {
-        steps[i] = {
-          ...steps[i],
-          status: 'error',
-          detail: err.message,
-        };
-
-        setState(s => ({
-          ...s,
-          running: false,
-          error: `Erreur sur "${RESOURCES[i].label}" : ${err.message}`,
-          steps: [...steps],
-        }));
-
-        return;
-      }
-
-      setState(s => ({ ...s, steps: [...steps] }));
-    }
-
-    /* =========================
-       2. USERS
-    ========================= */
-
-    const userStepIndex = RESOURCES.length;
-    steps[userStepIndex] = {
-      ...steps[userStepIndex],
-      status: 'running',
-    };
-    setState(s => ({ ...s, steps: [...steps] }));
-
-    try {
-      const deleted = await deleteAllUsersExceptSystem();
-
-      steps[userStepIndex] = {
-        ...steps[userStepIndex],
-        status: 'done',
-        detail: `${deleted} utilisateur(s) supprimé(s)`,
-      };
-    } catch (err: any) {
-      steps[userStepIndex] = {
-        ...steps[userStepIndex],
-        status: 'error',
-        detail: err.message,
-      };
-
+    const refresh = () =>
       setState(s => ({
         ...s,
-        running: false,
-        error: `Erreur suppression users : ${err.message}`,
         steps: [...steps],
       }));
 
-      return;
-    }
+    setState({
+      running: true,
+      done: false,
+      error: null,
+      steps: [...steps],
+    });
 
-    setState(s => ({ ...s, running: false, done: true }));
+    try {
+      /* =========================
+         Tickets + Assets
+      ========================= */
+
+      for (let i = 0; i < RESOURCES.length; i++) {
+        steps[i].status = 'running';
+        refresh();
+
+        const count = await deleteAllOf(
+          RESOURCES[i].path
+        );
+
+        steps[i].status = 'done';
+        steps[i].detail = `${count} supprimé(s)`;
+
+        refresh();
+      }
+
+      /* =========================
+         Utilisateurs
+      ========================= */
+
+      const userStepIndex = RESOURCES.length;
+
+      steps[userStepIndex].status = 'running';
+      refresh();
+
+      const deletedUsers =
+        await deleteAllUsersExceptSystem();
+
+      steps[userStepIndex].status = 'done';
+      steps[userStepIndex].detail =
+        `${deletedUsers} utilisateur(s) supprimé(s)`;
+
+      refresh();
+
+      /* =========================
+         Locations
+      ========================= */
+
+      const locationStepIndex =
+        RESOURCES.length + 1;
+
+      steps[locationStepIndex].status = 'running';
+      refresh();
+
+      const deletedLocations =
+        await deleteAllLocations();
+
+      steps[locationStepIndex].status = 'done';
+      steps[locationStepIndex].detail =
+        `${deletedLocations} location(s) supprimée(s)`;
+
+      refresh();
+
+      /* =========================
+         Fabricants
+      ========================= */
+
+      const manufacturerStepIndex =
+        RESOURCES.length + 2;
+
+      steps[manufacturerStepIndex].status =
+        'running';
+      refresh();
+
+      const deletedManufacturers =
+        await deleteAllDropdowns(
+          'Dropdowns/Manufacturer'
+        );
+
+      steps[manufacturerStepIndex].status =
+        'done';
+
+      steps[manufacturerStepIndex].detail =
+        `${deletedManufacturers} fabricant(s) supprimé(s)`;
+
+      refresh();
+
+      /* =========================
+         Modèles
+      ========================= */
+
+      const modelStepIndex =
+        RESOURCES.length + 3;
+
+      steps[modelStepIndex].status = 'running';
+      refresh();
+
+      const modelEndpoints = [
+        ...new Set(
+          Object.values(MODEL_ENDPOINT_MAP)
+            .filter(Boolean)
+        ),
+      ];
+
+      let deletedModels = 0;
+
+      for (const endpoint of modelEndpoints) {
+        try {
+          deletedModels +=
+            await deleteAllDropdowns(endpoint);
+        } catch (err) {
+          console.error(
+            'Erreur suppression modèle',
+            endpoint,
+            err
+          );
+        }
+      }
+
+      steps[modelStepIndex].status = 'done';
+      steps[modelStepIndex].detail =
+        `${deletedModels} modèle(s) supprimé(s)`;
+
+      refresh();
+
+      /* =========================
+         FIN
+      ========================= */
+
+      setState({
+        running: false,
+        done: true,
+        error: null,
+        steps: [...steps],
+      });
+
+    } catch (err: any) {
+
+      setState({
+        running: false,
+        done: false,
+        error:
+          err?.message ??
+          'Erreur inconnue',
+        steps: [...steps],
+      });
+
+    }
   }, []);
 
   const reset = useCallback(() => {
-    setState({ running: false, done: false, error: null, steps: [] });
+    setState({
+      running: false,
+      done: false,
+      error: null,
+      steps: [],
+    });
   }, []);
 
-  return { state, run, reset };
+  return {
+    state,
+    run,
+    reset,
+  };
 }
