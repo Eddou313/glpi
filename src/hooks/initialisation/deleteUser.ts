@@ -30,7 +30,7 @@ async function getAllUsers(): Promise<any[]> {
 }
 
 async function deleteUser(id: number) {
-  return glpiFetch('DELETE', `/Administration/User/${id}`, {
+  return glpiFetch('DELETE', `/Administration/User/${id}?force=true`, {
     input: { id }
   });
 }

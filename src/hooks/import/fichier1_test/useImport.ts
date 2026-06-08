@@ -1,11 +1,11 @@
 // hooks/useImport.ts
 import { useState, useCallback } from "react";
-import { importCache } from "./importCaches";
+import { importCache }    from "./importCaches";
 import { importFichier1 } from "./importFichier1";
 import { importFichier2 } from "./importFichier2";
 import { importFichier3 } from "./importFichier3";
-import { buildSummary }    from "./importResult"
-import type { colonneCSV } from "../../../types/import/fichier";
+import { buildSummary }   from "./importResult";
+import type { colonneCSV }      from "../../../types/import/fichier";
 import type { ImportRowResult, ImportSummary } from "./importResult";
 
 export type FichierLabel = "fichier1" | "fichier2" | "fichier3";

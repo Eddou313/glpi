@@ -1,51 +1,49 @@
 // services/importFichier1.ts
-import { glpiFetch, glpiPost } from "../../../api/db_glpi";
+import { glpiPost } from "../../../api/db_glpi";
 import { importCache } from "./importCaches";
 import { ITEM_TYPE_MAP, MODEL_ENDPOINT_MAP, STATUS_MAP } from "./glpi";
 import type { colonneCSV } from "../../../types/import/fichier";
 import type { ImportRowResult } from "./importResult";
+import { getGLPIToken } from "../../../api/db_client";
+import { createState } from "../../state/useState";
 
 type Row = colonneCSV["fichier1"];
 type ImageMap = Map<string, { blob: Blob; fileName: string }>;
-
 const LEGACY_GLPI_BASE = import.meta.env.VITE_GLPI_LEGACY_API_URL || "http://glpi.local/api.php/v1";
+const APP_TOKEN = import.meta.env.VITE_GLPI_APP_TOKEN;
+let _legacySessionToken: string | null = localStorage.getItem("glpi_token_legacy");
 
-// ── Headers pour l'API legacy GLPI v1 (Session-Token, pas Authorization) ─────
-// L'API REST GLPI /v1 attend "Session-Token" après initSession.
-// Notre token OAuth2 (/v2.3) est un Bearer différent du session_token legacy.
-// On doit d'abord ouvrir une session legacy avec le token OAuth puis utiliser
-// le session_token retourné pour les appels Document.
-// ─────────────────────────────────────────────────────────────────────────────
-
-let _legacySessionToken: string | null = null;
-
-async function ensureLegacySession(): Promise<string> {
+export async function ensureLegacySession(): Promise<string> {
   if (_legacySessionToken) return _legacySessionToken;
 
-  const userToken = localStorage.getItem("glpi_token");
-  if (!userToken) throw new Error("Token GLPI absent du localStorage");
+  const token = await getGLPIToken();
+  if (!token) throw new Error("GLPI token manquant");
 
-  const appToken = import.meta.env.VITE_GLPI_APP_TOKEN ?? "";
+  _legacySessionToken = token;
+  localStorage.setItem("glpi_token_legacy", token);
 
-  const res = await fetch(`${LEGACY_GLPI_BASE}/initSession`, {
-    method: "GET",
-    headers: {
-      "Authorization": `user_token ${userToken}`,
-      ...(appToken ? { "App-Token": appToken } : {}),
-    },
-  });
-
-  if (!res.ok) throw new Error(`initSession legacy échoué : HTTP ${res.status}`);
-  const data = await res.json();
-  _legacySessionToken = data.session_token;
-  return _legacySessionToken!;
+  return token;
 }
 
-function legacyHeaders(sessionToken: string): Record<string, string> {
-  const appToken = import.meta.env.VITE_GLPI_APP_TOKEN ?? "";
+export function legacyHeaders(
+  extra: Record<string, string> = {}
+): Record<string, string> {
+  const sessionToken =
+    _legacySessionToken ||
+    localStorage.getItem("glpi_token_legacy");
+
   return {
-    "Session-Token": sessionToken,
-    ...(appToken ? { "App-Token": appToken } : {}),
+    "Content-Type": "application/json",
+
+    ...(sessionToken
+      ? { "Session-Token": sessionToken }
+      : {}),
+
+    ...(APP_TOKEN
+      ? { "App-Token": APP_TOKEN }
+      : {}),
+
+    ...extra,
   };
 }
 
@@ -99,10 +97,10 @@ async function createUser(fullName: string): Promise<number> {
   if (!key) return 0;
   if (importCache.user.has(key)) return importCache.user.get(key)!;
 
-  const parts    = key.split(" ");
+  const parts = key.split(" ");
   const realname = parts[0] ?? key;
   const firstname = parts.slice(1).join(" ");
-  const username  = key.toLowerCase().replace(/\s+/g, ".");
+  const username = key.toLowerCase().replace(/\s+/g, ".");
 
   try {
     const res = await glpiPost<{ id: number }>("Administration/User", {
@@ -132,47 +130,57 @@ async function uploadImage(
   imageEntry: { blob: Blob; fileName: string }
 ): Promise<{ docId: number } | null> {
   try {
-    const sessionToken = await ensureLegacySession();
-
     const { blob, fileName } = imageEntry;
+
     const ext = fileName.split(".").pop()?.toLowerCase() ?? "jpg";
-    const mimeType = ({ jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif", webp: "image/webp" }[ext]) ?? "application/octet-stream";
 
-    // Étape 1 : créer le Document
+    const mime =
+      ({
+        jpg: "image/jpeg",
+        jpeg: "image/jpeg",
+        png: "image/png",
+        gif: "image/gif",
+        webp: "image/webp",
+      } as Record<string, string>)[ext] ?? "application/octet-stream";
+
     const form = new FormData();
-    form.append("uploadManifest", JSON.stringify({
-      input: {
-        name: fileName,
-        _filename: [fileName],
-        itemtype: glpiItemType,
-        items_id: assetId,
-      },
-    }));
-    form.append("filename[0]", new File([blob], fileName, { type: mimeType }));
 
-    const uploadRes = await fetch(`${LEGACY_GLPI_BASE}/Document`, {
-      method: "POST",
-      headers: legacyHeaders(sessionToken),
-      body: form,
-    });
+    form.append("file", new File([blob], fileName, { type: mime }));
 
-    if (!uploadRes.ok) throw new Error(`Upload document : HTTP ${uploadRes.status} — ${await uploadRes.text()}`);
-    const doc = await uploadRes.json();
+    form.append(
+      "input",
+      JSON.stringify({
+        name: fileName ?? `fichier :${mime}`,
+        filename: fileName ?? `fichier :${mime}`,
+        mime: mime,
+        comment: `Asset ${assetId}`,
+        category: { id: 0 },
+      })
+    );
 
-    // Étape 2 : lier le document à l'asset
-    const linkRes = await fetch(`${LEGACY_GLPI_BASE}/Document_Item`, {
-      method: "POST",
-      headers: { ...legacyHeaders(sessionToken), "Content-Type": "application/json" },
-      body: JSON.stringify({
-        input: { documents_id: doc.id, itemtype: glpiItemType, items_id: assetId },
-      }),
-    });
+    const res = await fetch(
+      `${import.meta.env.VITE_GLPI_API_URL}/v2.3/Management/Document`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("glpi_token")}`,
+          Accept: "application/json",
+        },
+        body: form,
+      }
+    );
 
-    if (!linkRes.ok) console.warn(`Liaison document : HTTP ${linkRes.status}`);
+    const text = await res.text();
+
+    if (!res.ok) {
+      throw new Error(text);
+    }
+
+    const doc = JSON.parse(text);
 
     return { docId: doc.id };
   } catch (err) {
-    console.warn("Image upload échoué pour asset", assetId, err);
+    console.warn("Upload image error", err);
     return null;
   }
 }
@@ -188,24 +196,28 @@ async function importRow(row: Row, index: number, imageMap?: ImageMap): Promise<
   try {
     const glpiItemType = ITEM_TYPE_MAP[row.Item_Type];
     if (!glpiItemType) {
-      result.status  = "skipped";
+      result.status = "skipped";
       result.message = `Type inconnu : "${row.Item_Type}"`;
       return result;
     }
-
-    // SÉQUENTIEL — garantit que le cache est rempli avant la ligne suivante
-    const locationId     = await createLocation(row.Location);
+    const stateId = await createState({
+      name: row.Status,
+    });
+    const locationId = await createLocation(row.Location);
     const manufacturerId = await createManufacturer(row.Manufacturer);
-    const modelId        = await createModel(row.Item_Type, row.Model);
-    const userId         = await createUser(row.User ?? "");
+    const modelId = await createModel(row.Item_Type, row.Model);
+    const userId = await createUser(row.User ?? "");
 
     const payload: Record<string, unknown> = {
-      name:         row.Name,
-      otherserial:  row.Inventory_Number,
-      status:       STATUS_MAP[row.Status] ?? 1,
-      location:     locationId,
+      name: row.Name,
+      otherserial: row.Inventory_Number,
+
+      location: locationId,
       manufacturer: manufacturerId,
-      model:        modelId,
+      model: modelId,
+
+      ...(stateId ? { states_id: stateId } : {}),
+
       ...(userId ? { user: userId } : {}),
     };
 
@@ -221,8 +233,8 @@ async function importRow(row: Row, index: number, imageMap?: ImageMap): Promise<
       }
     }
 
-    result.status  = "success";
-    result.glpiId  = res.id;
+    result.status = "success";
+    result.glpiId = res.id;
     result.message = `Créé → GLPI #${res.id}${imageMsg}`;
   } catch (err) {
     result.message = err instanceof Error ? err.message : String(err);
@@ -230,9 +242,6 @@ async function importRow(row: Row, index: number, imageMap?: ImageMap): Promise<
 
   return result;
 }
-
-// ── Export principal — NE PAS appeler importCache.clear() ici ────────────────
-// Le clear() est fait dans useImport avant de lancer le batch complet.
 
 export async function importFichier1(
   rows: Row[],

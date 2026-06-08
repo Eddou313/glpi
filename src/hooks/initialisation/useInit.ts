@@ -4,6 +4,7 @@ import { deleteAllLocations } from './deleteLocation';
 import { deleteAllDropdowns } from './deleteAll';
 import { MODEL_ENDPOINT_MAP } from '../import/fichier1_test/glpi';
 import { importCache } from '../import/fichier1_test/importCaches';
+import { deleteAllStates } from '../state/useState';
 
 type StepStatus = 'pending' | 'running' | 'done' | 'error';
 
@@ -44,8 +45,8 @@ async function deleteAllOf(path: string): Promise<number> {
     try {
       await glpiFetch(
         'DELETE',
-        `${path}/${item.id}`,
-        { input: { id: item.id } }
+        `${path}/${item.id}?force=true`,
+        { input: { id: item.id }}
       );
       deleted++;
     } catch {
@@ -89,8 +90,8 @@ async function deleteAllUsersExceptSystem(): Promise<number> {
     try {
       await glpiFetch(
         'DELETE',
-        `Administration/User/${user.id}`,
-        { input: { id: user.id } }
+        `Administration/User/${user.id}?force=true`,
+        { input: { id: user.id }}
       );
 
       deleted++;
@@ -161,6 +162,7 @@ export function useDeleteAllData() {
     });
 
     try {
+      const state = await deleteAllStates();
       /* =========================
          Tickets + Assets
       ========================= */

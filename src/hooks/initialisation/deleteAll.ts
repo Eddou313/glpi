@@ -24,8 +24,8 @@ export async function deleteAllDropdowns(
     try {
       await glpiFetch(
         'DELETE',
-        `${path}/${item.id}`,
-        { input: { id: item.id } }
+        `${path}/${item.id}?force=true`,
+        { input: { id: item.id }}
       );
 
       deleted++;

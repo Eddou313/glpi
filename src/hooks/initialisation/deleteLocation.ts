@@ -11,8 +11,8 @@ export async function deleteAllLocations(): Promise<number> {
     try {
       await glpiFetch(
         'DELETE',
-        `Dropdowns/Location/${loc.id}`,
-        { input: { id: loc.id } }
+        `Dropdowns/Location/${loc.id}?force`,
+        { input: { id: loc.id }}
       );
 
       deleted++;

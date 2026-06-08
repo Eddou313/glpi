@@ -21,5 +21,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src", "BackEnd_sqlite/src/import", "BackEnd_sqlite/src/routes/import.routes.js"]
 }

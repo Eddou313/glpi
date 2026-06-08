@@ -2,8 +2,8 @@
 import { useState } from "react";
 import { buildImageMapFromZip } from "../zip";
 import { DeleteDataButton }     from "../../../pages/import/Initialisation";
-import { parseFile }            from "../../import/parse";
-import { UseImages }            from "../../import/UseImages";
+import { parseFile }            from "../parse";
+import { UseImages }            from "../UseImages";
 import { useImport }            from "./useImport";
 import { ImportResultTable }    from "./importResultTables";
 import { ImportSummaryBar }     from "./importsummarybar";

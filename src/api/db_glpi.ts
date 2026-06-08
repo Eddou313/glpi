@@ -4,8 +4,11 @@ const CLIENT_SECRET = import.meta.env.VITE_GLPI_CLIENT_SECRET;
 const GLPI_USER     = import.meta.env.VITE_GLPI_USER;
 
 let cachedToken: string | null = localStorage.getItem("glpi_token");
+let cachedToken2: string | null = localStorage.getItem("glpi_token_legacy");
 
+const TOKEN_LIFETIME = 24 * 60 * 60 * 1000; 
 let tokenExpiresAt: number = Number(localStorage.getItem("glpi_token_exp") || 0);
+
 
 export function TokenValide(): boolean {
   const token = cachedToken || localStorage.getItem("glpi_token");
@@ -50,16 +53,18 @@ export async function getGLPIToken(pwd: string): Promise<reponse> {
 
     const now = Date.now();
     cachedToken = data.access_token;
-    if (!cachedToken) {
+    cachedToken2 = data.access_token;
+    if (!cachedToken && !cachedToken2) {
       return { error: "Token invalide reçu du serveur" };
     }
 
-    tokenExpiresAt =
-      now + (data.expires_in ?? 3600) * 1000 - 30_000;
+    // tokenExpiresAt = now + (data.expires_in ?? 3600) * 1000 - 30_000;
+    tokenExpiresAt = now + TOKEN_LIFETIME;
 
     // sync storage
-    localStorage.setItem("glpi_token", cachedToken);
+    localStorage.setItem("glpi_token", cachedToken ?? "");
     localStorage.setItem("glpi_token_exp", String(tokenExpiresAt));
+    localStorage.setItem("glpi_token_legacy", cachedToken2 ?? "");
 
     return { success: "Connexion réussie" };
 
