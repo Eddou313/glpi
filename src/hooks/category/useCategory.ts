@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { glpiFetch} from "../../api/db_glpi";
+// import { glpiFetch} from "../../api/db_glpi";
 import type { GLPICategory } from "../../types/category/category.types";
 
 

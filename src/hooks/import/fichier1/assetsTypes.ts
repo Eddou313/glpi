@@ -61,7 +61,7 @@ export async function fetchAllGlpiItemTypes(): Promise<GlpiItemType[]> {
   return all.sort((a, b) => a.label.localeCompare(b.label, "fr"));
 }
 
-export function resolveItemType(csvValue:  string,registry:  GlpiItemType[],): GlpiItemType | null {
+export function resolveItemType(csvValue:  string,registry:  GlpiItemType[]): GlpiItemType | null {
   const needle = csvValue.trim();
   const needleLower = needle.toLowerCase();
 

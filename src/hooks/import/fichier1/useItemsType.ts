@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { fetchAllGlpiItemTypes }from "./assetsTypes";
-import type { GlpiItemType }from "../../../types/import/fichier1";
+import { fetchAllGlpiItemTypes } from "./assetsTypes";
+import type { GlpiItemType } from "../../../types/import/fichier1";
 
 const SESSION_CACHE_KEY = "glpi_itemtypes_cache";
 
@@ -21,9 +21,9 @@ function saveToSession(types: GlpiItemType[]): void {
 }
 
 export function useGlpiItemTypes() {
-  const [itemTypes,  setItemTypes]  = useState<GlpiItemType[]>([]);
-  const [isLoading,  setIsLoading]  = useState(false);
-  const [error,      setError]      = useState<string | null>(null);
+  const [itemTypes, setItemTypes] = useState<GlpiItemType[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async (forceRefresh = false) => {
     if (itemTypes.length > 0 && !forceRefresh) return;
@@ -55,5 +55,19 @@ export function useGlpiItemTypes() {
     load(true);
   }, [load]);
 
-  return { itemTypes, isLoading, error, refresh };
+  function clearSessionCache(): void {
+    try {
+      sessionStorage.removeItem(SESSION_CACHE_KEY);
+    } catch {
+      // ignore
+    }
+  }
+  
+  const clearCache = useCallback(() => {
+    clearSessionCache();
+    setItemTypes([]);
+  }, []);
+
+
+  return { itemTypes, isLoading, error, refresh, clearCache };
 }

@@ -1,13 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { buildImageMapFromZip } from "../../hooks/import/zip";
 import { DeleteDataButton } from "./Initialisation";
 import { parseFile } from "../../hooks/import/parse";
 import { COLUMNS_DATE_FICHIER2, COLUMNS_HEURE_FICHIER2, FICHIER1_COLUMNS, FICHIER2_COLUMNS, FICHIER3_COLUMNS, type colonneCSV } from "../../types/import/fichier";
 import "./import.css";
 import { UseImages } from "../../hooks/import/UseImages";
-import {  useAssetImport } from "../../hooks/import/fichier1/useImport1";
-import type { GlpiItemType } from "../../types/import/fichier1";
-import { fetchAllGlpiItemTypes } from "../../hooks/import/fichier1/assetsTypes";
 
 function Import() {
     const [config] = useState({ separator: ',', encoding: 'UTF-8', skipHeader: true });
@@ -17,21 +14,9 @@ function Import() {
     const [ver, setVer] = useState<boolean>(false);
     const [zip, setZIP] = useState<File | null>(null);
 
-    const [registry, setRegistry] = useState<GlpiItemType[]>([]);
     const [mes, setMes] = useState("");
     const [error, setError] = useState("");
     const [importing, setImporting] = useState<boolean>(false);
-
-    const { importAssets } = useAssetImport();
-
-    useEffect(() => {
-        fetchAllGlpiItemTypes()
-            .then(setRegistry)
-            .catch((err) => {
-                console.error(err);
-                setRegistry([]);
-            });
-    }, []);
 
 
     const { cleanImageMap } = UseImages();
@@ -64,14 +49,7 @@ function Import() {
             ]);
 
             if (parsedCSV1.length > 0) {
-                const results = await importAssets(parsedCSV1, sary || new Map(), registry);
-                const failed = results.filter((r) => r.status === "error");
-
-                if (failed.length > 0) {
-                    setError(`${failed.length} élément(s) du fichier 1 n'ont pas pu être importés.`);
-                } else {
-                    setMes("Fichier 1 importé avec succès !");
-                }
+                console.log("CS1", parsedCSV1);
             }
             if (parsedCSV2) console.log("csv2 : ", parsedCSV2);
             if (parsedCSV3) console.log("csv3 : ", parsedCSV3);
@@ -165,7 +143,7 @@ function Import() {
                                     type="button"
                                     className="import-button"
                                     onClick={Importer}
-                                    disabled={importing}
+                                    disabled={importing }
                                 >
                                     {importing ? "Import en cours..." : "Importer les fichiers"}
                                 </button>
