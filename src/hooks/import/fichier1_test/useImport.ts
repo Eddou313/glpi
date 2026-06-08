@@ -7,6 +7,7 @@ import { importFichier3 } from "./importFichier3";
 import { buildSummary }    from "./importResult"
 import type { colonneCSV } from "../../../types/import/fichier";
 import type { ImportRowResult, ImportSummary } from "./importResult";
+
 export type FichierLabel = "fichier1" | "fichier2" | "fichier3";
 
 export interface FichierSummary {
@@ -20,7 +21,7 @@ interface RunArgs {
   rows1:     colonneCSV["fichier1"][];
   rows2:     colonneCSV["fichier2"][];
   rows3:     colonneCSV["fichier3"][];
-  imageMap?: ImageMap;   // ← optionnel, passé depuis Import.tsx
+  imageMap?: ImageMap;
 }
 
 interface UseImportReturn {
@@ -46,13 +47,16 @@ export function useImport(): UseImportReturn {
     setImporting(true);
     setLiveResults([]);
     setSummaries([]);
+
+    // ── Clear unique ici, avant tout ─────────────────────────────────────────
+    // importFichier1 ne doit PAS appeler clear() lui-même
+    // pour que le cache survive entre fichier1 → fichier2 → fichier3
     importCache.clear();
 
     const all: FichierSummary[] = [];
 
     if (rows1.length > 0) {
       setCurrentFile("fichier1");
-      // imageMap transmis à importFichier1
       const r1 = await importFichier1(rows1, push, imageMap);
       all.push({ label: "fichier1", summary: buildSummary(r1) });
       setSummaries([...all]);

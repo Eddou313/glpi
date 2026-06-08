@@ -3,6 +3,7 @@ import { glpiPost } from "../../../api/db_glpi";
 import { importCache } from "./importCaches";
 import type { colonneCSV } from "../../../types/import/fichier";
 import type { ImportRowResult } from "./importResult";
+import { normalizeKey } from "./importFichier2";
 
 type Row = colonneCSV["fichier3"];
 
@@ -13,7 +14,7 @@ function parseFr(val: string | number): number {
 
 async function importRow(row: Row, index: number): Promise<ImportRowResult> {
   // Num_Ticket peut être number ou string selon le parser
-  const numTicket = String(row.Num_Ticket ?? "").trim();
+  const numTicket = normalizeKey(row.Num_Ticket);
 
   const result: ImportRowResult = {
     row: index + 1,

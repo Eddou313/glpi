@@ -34,7 +34,7 @@ function parseItems(raw: unknown): string[] {
 
 async function importRow(row: Row, index: number): Promise<ImportRowResult> {
   // Ref_Ticket peut être number ou string selon le parser CSV
-  const refTicket = String(row.Ref_Ticket ?? "").trim();
+  const refTicket = normalizeKey(row.Ref_Ticket);
 
   const result: ImportRowResult = {
     row: index + 1,
@@ -79,6 +79,7 @@ async function importRow(row: Row, index: number): Promise<ImportRowResult> {
 
     const res = await glpiPost<{ id: number }>("Assistance/Ticket", payload);
 
+    
     // Stocker sous la clé Ref_Ticket (string normalisée)
     importCache.ticket.set(refTicket, res.id);
 
@@ -104,4 +105,19 @@ export async function importFichier2(
     onProgress(r);
   }
   return results;
+}
+
+export function normalizeKey(v: unknown): string {
+  return String(v ?? "")
+    .trim()
+    .replace(/\s+/g, "")   // supprime espaces invisibles
+    .replace(/\u00A0/g, "") // espace insécable
+    .toLowerCase();
+}
+
+function debugCacheTicket() {
+  console.log("TICKET CACHE:");
+  for (const [k, v] of importCache.ticket.entries()) {
+    console.log(JSON.stringify(k), "=>", v);
+  }
 }

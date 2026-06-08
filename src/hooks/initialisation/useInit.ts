@@ -3,6 +3,7 @@ import { glpiGet, glpiFetch } from '../../api/db_glpi';
 import { deleteAllLocations } from './deleteLocation';
 import { deleteAllDropdowns } from './deleteAll';
 import { MODEL_ENDPOINT_MAP } from '../import/fichier1_test/glpi';
+import { importCache } from '../import/fichier1_test/importCaches';
 
 type StepStatus = 'pending' | 'running' | 'done' | 'error';
 
@@ -121,7 +122,7 @@ export function useDeleteAllData() {
     error: null,
     steps: [],
   });
-
+  importCache.clear();
   const run = useCallback(async () => {
     const steps: Step[] = [
       ...RESOURCES.map(r => ({

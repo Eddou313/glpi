@@ -2,6 +2,7 @@ import { glpiFetch } from "../../../api/db_glpi";
 import { resolveOrCreate } from "./dropDownService";
 import type { RawAssetRow, GlpiCreatedItem, GlpiItemType } from "../../../types/import/fichier1";
 
+const API_BASE_URL = import.meta.env.VITE_GLPI_API_URL || '/glpi-api';
 const STATUS_ID_MAP: Record<string, number> = {
   "En production": 1,
   "En stock": 2,
@@ -84,21 +85,28 @@ export async function uploadAssetImage(
   formData.append(
     "uploadManifest",
     JSON.stringify({
-      input: { name: image.fileName, _filename: [image.fileName] },
-    }),
+      input: {
+        name: image.fileName,
+        _filename: [image.fileName],
+        itemtype: type,
+        items_id: itemId,
+      },
+    })
   );
   formData.append("filename[0]", image.blob, image.fileName);
 
-  const uploadResponse = await fetch(
-    `${import.meta.env.VITE_GLPI_API_URL || "/glpi-api"}/v2.3/Document`,
-    { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formData },
-  );
-  if (!uploadResponse.ok) {
-    throw new Error(`Échec upload image : ${await uploadResponse.text()}`);
+  const response = await fetch(`${API_BASE_URL}/v2.3/Document`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Échec upload image : ${await response.text()}`);
   }
 
-  const doc = await uploadResponse.json();
+  const doc = await response.json();
   await glpiFetch("POST", "Document_Item", {
-    input: { documents_id: doc.id, itemtype: type.endpoint, items_id: itemId },
+    input: { documents_id: doc.id, itemtype: type, items_id: itemId },
   });
 }

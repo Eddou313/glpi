@@ -17,7 +17,6 @@ export async function deleteAllLocations(): Promise<number> {
 
       deleted++;
     } catch (err: any) {
-      // 🔥 GLPI bloque si utilisé → on ignore
       const msg = err?.message || '';
       if (msg.includes('ERROR_RIGHT_MISSING') || msg.includes('403')) {
         continue;
