@@ -1,4 +1,4 @@
-import { glpiPost } from "../../api/db_glpi";
+import { glpiFetch, glpiPost } from "../../api/db_glpi";
 
 type CreateStateInput = {
   name: string;
@@ -31,7 +31,6 @@ export async function createState(input: CreateStateInput): Promise<number> {
       id: input.parent_id ?? 0,
     },
 
-    // ✔ visibilities GLPI (ok mais optionnel selon config)
     visibilities: {
       computer: true,
       monitor: true,
@@ -57,14 +56,13 @@ export async function createState(input: CreateStateInput): Promise<number> {
   };
 
   try {
-    const res = await glpiPost<{ id: number }>("Dropdowns/State", payload);
+    const res = await glpiFetch<{ id: number }>("POST","Dropdowns/State", payload);
 
     stateCache.set(key, res.id);
     return res.id;
   } catch (err) {
     console.warn(`State "${key}" error:`, err);
 
-    // ✔ important : éviter retry infini
     stateCache.set(key, 0);
 
     return 0;

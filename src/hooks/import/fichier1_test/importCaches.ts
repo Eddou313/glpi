@@ -1,18 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-//  services/importCache.ts
-//
-//  Cache local en mémoire alimenté par l'import du fichier 1.
-//  Fichiers 2 et 3 l'utilisent pour résoudre les IDs sans appel GLPI.
-//
-//  Structure :
-//    locationCache   : nom        → id GLPI
-//    manufacturerCache: nom       → id GLPI
-//    modelCache      : nom        → id GLPI
-//    userCache       : nom complet→ id GLPI (0 si absent)
-//    assetCache      : name       → { id, itemType }
-//    ticketCache     : Ref_Ticket → id GLPI (alimenté par import fichier 2)
-// ─────────────────────────────────────────────────────────────────────────────
-
 export interface CachedAsset {
   id: number;
   itemType: string; // ex: "Computer"
