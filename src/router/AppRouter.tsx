@@ -16,13 +16,13 @@ function AppRouter() {
     <BrowserRouter>
       <Routes>
           <Route path="/" element={<Test />}></Route>
-          <Route path="/file" element={<Imports />}></Route>
+          <Route path="/file" element={<Import />}></Route>
         {/* backoffice */}
           <Route path="/login" element={<LoginPage />}></Route>
           <Route element={<SecureRoute />}>
             <Route path="/user" element={<UsersPage />} />
             <Route path="/admin" element={<UserList />} />
-            <Route path="/import" element={<Import />} />
+            <Route path="/import" element={<Imports />} />
             <Route path="/tickets" element={<TicketsPage />} />
             <Route path="/Dashboard" element={<DashboardPage />} />
           </Route>

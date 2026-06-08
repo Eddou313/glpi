@@ -59,17 +59,17 @@ export function useImport(): UseImportReturn {
     }
 
     if (rows2.length > 0) {
-    //   setCurrentFile("fichier2");
-    //   const r2 = await importFichier2(rows2, push);
-    //   all.push({ label: "fichier2", summary: buildSummary(r2) });
-    //   setSummaries([...all]);
+      setCurrentFile("fichier2");
+      const r2 = await importFichier2(rows2, push);
+      all.push({ label: "fichier2", summary: buildSummary(r2) });
+      setSummaries([...all]);
     }
 
     if (rows3.length > 0) {
-    //   setCurrentFile("fichier3");
-    //   const r3 = await importFichier3(rows3, push);
-    //   all.push({ label: "fichier3", summary: buildSummary(r3) });
-    //   setSummaries([...all]);
+      setCurrentFile("fichier3");
+      const r3 = await importFichier3(rows3, push);
+      all.push({ label: "fichier3", summary: buildSummary(r3) });
+      setSummaries([...all]);
     }
 
     setCurrentFile(null);

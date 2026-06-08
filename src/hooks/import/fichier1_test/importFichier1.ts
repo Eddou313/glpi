@@ -187,10 +187,10 @@ export async function importFichier1(
 ): Promise<ImportRowResult[]> {
     importCache.clear();
     const results: ImportRowResult[] = [];
-    // for (let i = 0; i < rows.length; i++) {
-    //     const r = await importRow(rows[i], i, imageMap);
-    //     results.push(r);
-    //     onProgress(r);
-    // }
+    for (let i = 0; i < rows.length; i++) {
+        const r = await importRow(rows[i], i, imageMap);
+        results.push(r);
+        onProgress(r);
+    }
     return results;
 }
