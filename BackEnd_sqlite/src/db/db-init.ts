@@ -12,12 +12,12 @@ db.exec(
 `
   CREATE TABLE kanban_statuses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    technical_name TEXT NOT NULL UNIQUE, 
+    technical_name iNTEGER, 
     default_name_fr TEXT NOT NULL, 
     name_mg TEXT NOT NULL,       
     bg_color TEXT NOT NULL DEFAULT '#FFFFFF' 
 );
 `
 );
-
+console.log("creation fait !");
 process.exit(0);
