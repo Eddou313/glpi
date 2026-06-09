@@ -2,12 +2,12 @@
 // Import fichier 2 — création des tickets GLPI
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { glpiPost }         from "../../../../../../api/db_glpi";
-import { importCache }      from "../fichier1/importCaches";
+import { glpiPost, glpiPostV1 } from "../../../../../../api/db_glpi";
+import { importCache } from "../fichier1/importCaches";
 import { resolveItems, analyzeRows2, parseItems } from "./ticket.preload";
-import {TICKET_STATUS_MAP,TICKET_PRIORITY_MAP,TICKET_TYPE_MAP,} from "../../types/fichier2";
+import { TICKET_STATUS_MAP, TICKET_PRIORITY_MAP, TICKET_TYPE_MAP, } from "../../types/fichier2";
 import type { CsvRow2, CachedTicket } from "../../types/fichier2";
-import type { ImportRowResult }       from "../../../importResult";
+import type { ImportRowResult } from "../../../importResult";
 
 // ── Helper date ISO ───────────────────────────────────────────────────────────
 function toIso(date: string, heure: string): string {
@@ -27,38 +27,41 @@ function toIso(date: string, heure: string): string {
 
 // ── Construction du payload ticket ───────────────────────────────────────────
 function buildTicketPayload(row: CsvRow2): Record<string, unknown> {
-  const statusId   = TICKET_STATUS_MAP[row.Status]    ?? 1;
+  const statusId = TICKET_STATUS_MAP[row.Status] ?? 1;
   const priorityId = TICKET_PRIORITY_MAP[row.Priority] ?? 3;
-  const typeId     = TICKET_TYPE_MAP[String(row.Type)] ?? Number(row.Type) ?? 1;
-  const dateIso    = toIso(String(row.Date), String(row.Heure));
+  const typeId = TICKET_TYPE_MAP[String(row.Type)] ?? Number(row.Type) ?? 1;
+  const dateIso = toIso(String(row.Date), String(row.Heure));
 
   return {
-    name:     String(row.Titre),
-    content:  String(row.Description ?? ""),
-    date:     dateIso,
-    type:     typeId,
-    urgency:  priorityId,
-    impact:   priorityId,
+    name: String(row.Titre),
+    content: String(row.Description ?? ""),
+    date: dateIso,
+    type: typeId,
+    urgency: priorityId,
+    impact: priorityId,
     priority: priorityId,
-    status:   { id: statusId },
+    status: { id: statusId },
   };
 }
 
-// ── Liaison items au ticket ───────────────────────────────────────────────────
-// POST Assistance/Ticket_Item pour chaque asset lié
 async function linkItemsToTicket(
-  ticketId:   number,
+  ticketId: number,
   items: { id: number; itemType: string; name: string }[]
 ): Promise<string[]> {
   const linked: string[] = [];
 
   for (const item of items) {
     try {
-      await glpiPost("Assistance/Ticket_Item", {
-        tickets_id: ticketId,
-        items_id:   item.id,
-        itemtype:   item.itemType,
-      });
+      await glpiPostV1("Item_Ticket",
+        {
+          input: [
+            {
+              tickets_id: ticketId,
+              items_id: item.id,
+              itemtype: item.itemType,
+            }
+          ]
+        });
       linked.push(item.name);
     } catch (err) {
       console.warn(
@@ -73,13 +76,13 @@ async function linkItemsToTicket(
 
 // ── Import d'une ligne ────────────────────────────────────────────────────────
 async function importTicketRow(row: CsvRow2, index: number): Promise<ImportRowResult> {
-  const ref    = String(row.Ref_Ticket ?? "").trim();
-  const titre  = String(row.Titre ?? `Ticket-${index + 1}`);
+  const ref = String(row.Ref_Ticket ?? "").trim();
+  const titre = String(row.Titre ?? `Ticket-${index + 1}`);
 
   const result: ImportRowResult = {
-    row:     index + 1,
-    name:    titre,
-    status:  "error",
+    row: index + 1,
+    name: titre,
+    status: "error",
     message: "",
   };
 
@@ -89,14 +92,14 @@ async function importTicketRow(row: CsvRow2, index: number): Promise<ImportRowRe
 
     // ── Création du ticket ────────────────────────────────────────────────────
     const payload = buildTicketPayload(row);
-    const res     = await glpiPost<{ id: number }>("Assistance/Ticket", payload);
+    const res = await glpiPost<{ id: number }>("Assistance/Ticket", payload);
 
     // ── Liaison items ─────────────────────────────────────────────────────────
     const linkedNames = await linkItemsToTicket(res.id, resolvedItems);
 
     // ── Stockage dans cache partagé (utilisé par fichier 3) ───────────────────
     const cachedTicket: CachedTicket = {
-      id:   res.id,
+      id: res.id,
       ref,
       name: titre,
       date: toIso(String(row.Date), String(row.Heure)),
@@ -106,8 +109,8 @@ async function importTicketRow(row: CsvRow2, index: number): Promise<ImportRowRe
     // Stockage étendu pour fichier 3
     importCache.ticketDetail.set(ref, cachedTicket);
 
-    result.status  = "success";
-    result.glpiId  = res.id;
+    result.status = "success";
+    result.glpiId = res.id;
     result.message =
       `Ticket créé → GLPI #${res.id}` +
       (linkedNames.length ? ` | Lié à : ${linkedNames.join(", ")}` : "") +
@@ -124,7 +127,7 @@ async function importTicketRow(row: CsvRow2, index: number): Promise<ImportRowRe
 
 // ── Point d'entrée public ─────────────────────────────────────────────────────
 export async function importFichier2(
-  rows:       CsvRow2[],
+  rows: CsvRow2[],
   onProgress: (r: ImportRowResult) => void
 ): Promise<ImportRowResult[]> {
 
