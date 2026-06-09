@@ -109,4 +109,16 @@ export const MODEL_ENDPOINT_MAP: Record<string, string> = {
   Printer:  "Dropdowns/PrinterModel",
   Phone:    "Dropdowns/PhoneModel",
   default:  "Dropdowns/ComputerModel",
+  NetworkEquipment: "Dropdowns/NetworkEquipmentModel",
+  Enclosure: "Dropdowns/EnclosureModel",
+  Peripheral: "Dropdowns/PeripheralModel",
+  VirtualMachine: "Dropdowns/VirtualMachineModel",
 };
+
+
+
+
+
+
+
+

@@ -112,21 +112,6 @@ async function createUser(fullName: string): Promise<number> {
   }
 }
 
-// ── PHASE 1 : pré-chargement parallèle des données indépendantes ──────────────
-//
-// On collecte les valeurs uniques de chaque colonne "feuille" (sans FK vers
-// d'autres lignes du CSV) et on les pousse en parallèle dans GLPI avant de
-// traiter les lignes asset par asset.
-// Ordre d'indépendance :
-//   Status      → aucune dépendance
-//   User        → aucune dépendance
-//   Location    → aucune dépendance
-//   Manufacturer → aucune dépendance
-//   Model       → dépend du type (String), pas d'un autre enregistrement CSV
-//
-// Ce qui reste séquentiel (dépend d'une autre ligne CSV) :
-//   Asset       → dépend de tous les dropdowns ci-dessus
-
 async function preloadIndependentData(rows: Row[]): Promise<void> {
   // ── Collecte des valeurs uniques ────────────────────────────────────────────
   const statuses:     Set<string>                  = new Set();
@@ -152,8 +137,6 @@ async function preloadIndependentData(rows: Row[]): Promise<void> {
     `${[...models.values()].reduce((s, v) => s + v.size, 0)} modèles`
   );
 
-  // ── Insertion parallèle par catégorie ───────────────────────────────────────
-  // On filtre les clés déjà en cache pour ne pas refaire des appels inutiles.
 
   const statusJobs = [...statuses]
     .filter(name => !importCache.location.has(name)) // cache séparé : stateCache dans useState.ts
