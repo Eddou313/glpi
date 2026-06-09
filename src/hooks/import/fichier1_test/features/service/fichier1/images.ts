@@ -2,8 +2,8 @@
 // Upload image + liaison Document↔Asset via GLPI v1
 // ─────────────────────────────────────────────────────────────────────────────
 
-import  { glpiPostV1 } from "../../../../../api/db_glpi";
-import type { ImageMap, CachedDocument } from "../types/fichier1";
+import  { glpiPostV1 } from "../../../../../../api/db_glpi";
+import type { ImageMap, CachedDocument } from "../../types/fichier1";
 
 const MIME_MAP: Record<string, string> = {
   jpg:  "image/jpeg",

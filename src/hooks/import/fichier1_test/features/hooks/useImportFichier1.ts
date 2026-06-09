@@ -3,11 +3,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useCallback, useRef, useState } from "react";
-import { preloadFichier1 } from "../service/preload";
-import { importAllAssets } from "../service/asset";
+import { preloadFichier1 } from "../service/fichier1/preload";
+import { importAllAssets } from "../service/fichier1/asset";
 import type { ImportFichier1Params } from "../types/fichier1";
 import type { ImportRowResult } from "../../importResult";
-import { loadAssetRegistry } from "../service/assets_detail";
+import { loadAssetRegistry } from "../service/fichier1/assets_detail";
 
 export type ImportPhase =
     | "idle"

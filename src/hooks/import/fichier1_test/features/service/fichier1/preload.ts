@@ -1,6 +1,6 @@
 
-import { glpiPost, glpiPostV1 } from "../../../../../api/db_glpi";
-import type { CsvRow1, CachedStatus, CachedLocation, CachedManufacturer, CachedModel, CachedUser, PreloadCache, CachedDocument, ImageMap, } from "../types/fichier1";
+import { glpiPost, glpiPostV1 } from "../../../../../../api/db_glpi";
+import type { CsvRow1, CachedStatus, CachedLocation, CachedManufacturer, CachedModel, CachedUser, PreloadCache, CachedDocument, ImageMap, } from "../../types/fichier1";
 import { getAssetRegistry } from "./assets_detail";
 import { preloadImages } from "./images";
 

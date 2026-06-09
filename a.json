@@ -1,56 +1,67 @@
 {
   "name": "string",
-  "comment": "string",
-  "status": {
+  "content": "string",
+  "user_recipient": {
     "id": 0
   },
-  "entity": {
-    "completename": "string"
-  },
-  "is_recursive": true,
-  "manufacturer": {
+  "user_editor": {
     "id": 0
   },
-  "user": {
-    "id": 0
-  },
-  "user_tech": {
-    "id": 0
-  },
-  "contact": "string",
-  "contact_num": "string",
-  "serial": "string",
-  "otherserial": "string",
   "is_deleted": true,
-  "date_creation": "2026-06-08T22:58:14.476Z",
-  "date_mod": "2026-06-08T22:58:14.476Z",
+  "category": {
+    "id": 0
+  },
   "location": {
     "id": 0
   },
-  "type": {
+  "urgency": 1,
+  "impact": 1,
+  "priority": 1,
+  "resolution_date": "2026-06-09T00:50:05.197Z",
+  "date_creation": "2026-06-09T00:50:05.197Z",
+  "date_mod": "2026-06-09T00:50:05.197Z",
+  "date": "2026-06-09T00:50:05.197Z",
+  "date_solve": "2026-06-09T00:50:05.197Z",
+  "date_close": "2026-06-09T00:50:05.197Z",
+  "type": 1,
+  "external_id": "string",
+  "request_type": {
     "id": 0
   },
-  "model": {
+  "take_into_account_date": "2026-06-09T00:50:05.197Z",
+  "sla_ttr": {
     "id": 0
   },
-  "group": [
+  "sla_tto": {
+    "id": 0
+  },
+  "ola_ttr": {
+    "id": 0
+  },
+  "ola_tto": {
+    "id": 0
+  },
+  "sla_level_ttr": {
+    "id": 0
+  },
+  "ola_level_ttr": {
+    "id": 0
+  },
+  "internal_resolution_date": "2026-06-09T00:50:05.197Z",
+  "internal_take_into_account_date": "2026-06-09T00:50:05.197Z",
+  "global_validation": 1,
+  "status": {},
+  "entity": {
+    "completename": "string"
+  },
+  "team": [
     {
-      "id": 0,
-      "name": "string"
+      "name": "string",
+      "type": "string",
+      "role": "string"
     }
   ],
-  "group_tech": [
-    {
-      "id": 0,
-      "name": "string"
-    }
-  ],
-  "network": {},
-  "autoupdatesystem": {
-    "id": 0
-  },
-  "is_template": false,
-  "template_name": "string",
-  "is_dynamic": false,
-  "ticket_tco": 0
+  "costs": [
+    {}
+  ]
 }
