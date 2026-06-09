@@ -23,7 +23,7 @@ export interface GlpiAsset {
   date_creation?: string | null;
   date_mod?: string | null;
 
-  status?: string | null;
+  status?: GLPIState | null;
 
   entity?: {
     id: number;
@@ -67,4 +67,9 @@ export interface GlpiAsset {
   } | null;
 
   itemType: string;
+}
+
+export interface GLPIState{
+  id: number;
+  name: string;
 }

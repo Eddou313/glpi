@@ -1,8 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Pré-chargement fichier 2 : dédoublonnage des items CSV + vérification cache
-// ─────────────────────────────────────────────────────────────────────────────
-
-import { importCache } from "../fichier1/importCaches";
+import { importCache } from "../importCaches";
 import type { CsvRow2 } from "../../types/fichier2";
 
 export interface ResolvedItem {
@@ -11,6 +7,26 @@ export interface ResolvedItem {
   itemType: string;
 }
 
+export function getCsvValue(row: any, keys: string[]): string {
+  if (!row || typeof row !== "object") return "";
+  
+  // 1. Recherche exacte
+  for (const k of keys) {
+    if (row[k] !== undefined && row[k] !== null) return String(row[k]).trim();
+  }
+  
+  // 2. Recherche insensible à la casse et aux espaces
+  const rowKeys = Object.keys(row);
+  for (const k of keys) {
+    const target = k.toLowerCase().replace(/[^a-z0-9]/g, "");
+    for (const rk of rowKeys) {
+      if (rk.toLowerCase().replace(/[^a-z0-9]/g, "") === target) {
+        return String(row[rk]).trim();
+      }
+    }
+  }
+  return "";
+}
 // ── Parse la colonne Items (string, JSON array, ou tableau déjà parsé) ─────────
 export function parseItems(raw: unknown): string[] {
   if (!raw) return [];
@@ -30,20 +46,22 @@ export function parseItems(raw: unknown): string[] {
 // Supprime les doublons et les items introuvables en cache
 export function resolveItems(raw: unknown): ResolvedItem[] {
   const names = parseItems(raw);
-
-  // Dédoublonnage sur le nom normalisé
-  const seen    = new Set<string>();
+  const seen = new Set<string>();
   const resolved: ResolvedItem[] = [];
 
   for (const name of names) {
-    const key = name.toLowerCase();
+    const key = name.toLowerCase().trim();
     if (seen.has(key)) {
       console.warn(`[Ticket] Item dupliqué ignoré : "${name}"`);
       continue;
     }
     seen.add(key);
 
-    const cached = importCache.asset.get(name);
+    // Recherche adaptative (Brut, puis Minuscule, puis Majuscule)
+    const cached = importCache.asset.get(name) || 
+                   importCache.asset.get(name.toLowerCase()) || 
+                   importCache.asset.get(name.toUpperCase());
+
     if (!cached) {
       console.warn(`[Ticket] Item introuvable en cache : "${name}" — ignoré`);
       continue;

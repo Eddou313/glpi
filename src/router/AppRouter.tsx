@@ -10,7 +10,7 @@ import { ItemsPage } from "../pages/FrontOffice/elements/ItemsPages"
 import { CreateTicketPage } from "../pages/FrontOffice/Tickets/TicketForm"
 import { DashboardPage } from "../pages/dashbord/DashbordPages"
 import { FrontOfficeLayout } from "../pages/inc/layout"
-import Imports from "../hooks/import/fichier1_test/import1"
+import Imports from "../hooks/import/fichier1_test/features/import1"
 
 // import ImportApiPage from "../pages/ImportAPi"
 function AppRouter() {

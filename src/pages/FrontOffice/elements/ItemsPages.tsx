@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { useItems } from "../../../hooks/FrontOffice/elements/useItems";
 import { useAssetTypes } from "../../../hooks/itemsTypes/useItemsTypes";
+import type { GLPIState } from "../../../types/elements/items.types";
 
 export function ItemsPage() {
-  const { items, loading, error } = useItems();
+  const { items, status, loading, error } = useItems();
 
   const [id, setId] = useState("");
   const [name, setName] = useState("");
   const [type, setType] = useState("");
+  const [statusFilter, setStatusFilter] = useState<GLPIState | null>(null);
   const { assetTypes } = useAssetTypes();
 
   const filteredItems = items.filter((item) => {
@@ -21,13 +23,17 @@ export function ItemsPage() {
         .toLowerCase()
         .includes(name.toLowerCase());
 
+    const matchStatus =
+      statusFilter === null ||
+      item.status?.id === statusFilter.id;
+
     const matchType =
       type === "" ||
       item.itemType
         .toLowerCase()
         .includes(type.toLowerCase());
 
-    return matchId && matchName && matchType;
+    return matchId && matchName && matchStatus && matchType;
   });
 
   if (loading) return <p className="state-loading">Chargement...</p>;
@@ -67,6 +73,25 @@ export function ItemsPage() {
             ))}
           </select>
         </div>
+        <div className="items-filters__field">
+          <label>Status</label>
+          <select
+            value={statusFilter?.id ?? ""}
+            onChange={(e) => {
+              const selectedStatus = status?.find((s) => s.id === parseInt(e.target.value));
+              setStatusFilter(selectedStatus ?? null);
+            }}
+          >
+            <option value="">
+              Tous les statuts
+            </option>
+            {status?.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Tableau */}
@@ -77,6 +102,7 @@ export function ItemsPage() {
               <th>ID</th>
               <th>Nom</th>
               <th>Type</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody>
@@ -85,6 +111,7 @@ export function ItemsPage() {
                 <td>{item.id}</td>
                 <td>{item.name ?? "-"}</td>
                 <td>{item.itemType}</td>
+                <td>{item.status?.name ?? "Pas de statut pour le moment"}</td>
               </tr>
             ))}
           </tbody>

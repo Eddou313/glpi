@@ -1,4 +1,4 @@
-import { glpiFetch, glpiPost } from "../../api/db_glpi";
+import { glpiFetch} from "../../api/db_glpi";
 
 type CreateStateInput = {
   name: string;

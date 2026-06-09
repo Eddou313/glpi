@@ -1,9 +1,9 @@
 // pages/Import.tsx
 import { useState } from "react";
-import { buildImageMapFromZip } from "../zip";
-import { DeleteDataButton }     from "../../../pages/import/Initialisation";
-import { parseFile }            from "../parse";
-import { UseImages }            from "../UseImages";
+import { buildImageMapFromZip } from "../../zip";
+import { DeleteDataButton }     from "../../../../pages/import/Initialisation";
+import { parseFile }            from "../../parse";
+import { UseImages }            from "../../UseImages";
 import { useImport }            from "./useImport";
 import { ImportResultTable }    from "./importResultTables";
 import { ImportSummaryBar }     from "./importsummarybar";
@@ -14,7 +14,7 @@ import {
   COLUMNS_DATE_FICHIER2,
   COLUMNS_HEURE_FICHIER2,
   type colonneCSV,
-} from "../../../types/import/fichier";
+} from "../../../../types/import/fichier";
 import "./import.css";
 
 function Import() {

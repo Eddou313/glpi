@@ -1,4 +1,4 @@
-import type { ImportRowResult } from "../../importResult";
+import type { ImportRowResult } from "../importResult";
 
 export interface CachedDocument {
   docId:    number;

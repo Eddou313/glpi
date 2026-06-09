@@ -1,3 +1,5 @@
+import type { CachedTicket } from "../types/fichier2";
+
 export interface CachedAsset {
   id: number;
   itemType: string; // ex: "Computer"
@@ -9,7 +11,8 @@ class ImportCache {
   readonly model        = new Map<string, number>();
   readonly user         = new Map<string, number>(); // fullName → id (0 = anonyme)
   readonly asset        = new Map<string, CachedAsset>(); // Name → { id, itemType }
-  readonly ticket       = new Map<string, number>();       // Ref_Ticket → id
+  readonly ticket       = new Map<string, number>(); 
+  readonly ticketDetail  = new Map<string, CachedTicket>();      // Ref_Ticket → id
 
   clear() {
     this.location.clear();
@@ -18,6 +21,7 @@ class ImportCache {
     this.user.clear();
     this.asset.clear();
     this.ticket.clear();
+    this.ticketDetail.clear();
   }
 }
 

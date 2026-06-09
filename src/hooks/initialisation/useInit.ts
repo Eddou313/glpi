@@ -2,8 +2,8 @@ import { useState, useCallback } from 'react';
 import { glpiGet, glpiFetch } from '../../api/db_glpi';
 import { deleteAllLocations } from './deleteLocation';
 import { deleteAllDropdowns } from './deleteAll';
-import { MODEL_ENDPOINT_MAP } from '../import/fichier1_test/glpi';
-import { importCache } from '../import/fichier1_test/importCaches';
+import { MODEL_ENDPOINT_MAP } from '../import/fichier1_test/features/glpi';
+import { importCache } from '../../hooks/import/fichier1_test/features/service/importCaches';
 import { deleteAllStates } from '../state/useState';
 
 type StepStatus = 'pending' | 'running' | 'done' | 'error';
@@ -162,7 +162,7 @@ export function useDeleteAllData() {
     });
 
     try {
-      const state = await deleteAllStates();
+      await deleteAllStates();
       /* =========================
          Tickets + Assets
       ========================= */

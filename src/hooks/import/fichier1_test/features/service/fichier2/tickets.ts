@@ -1,13 +1,9 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Import fichier 2 — création des tickets GLPI
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { glpiPost, glpiPostV1 } from "../../../../../../api/db_glpi";
-import { importCache } from "../fichier1/importCaches";
-import { resolveItems, analyzeRows2, parseItems } from "./ticket.preload";
+import { importCache } from "../importCaches";
+import { resolveItems, analyzeRows2, parseItems, getCsvValue } from "./ticket.preload";
 import { TICKET_STATUS_MAP, TICKET_PRIORITY_MAP, TICKET_TYPE_MAP, } from "../../types/fichier2";
 import type { CsvRow2, CachedTicket } from "../../types/fichier2";
-import type { ImportRowResult } from "../../../importResult";
+import type { ImportRowResult } from "../../importResult";
 
 // ── Helper date ISO ───────────────────────────────────────────────────────────
 function toIso(date: string, heure: string): string {
@@ -76,7 +72,8 @@ async function linkItemsToTicket(
 
 // ── Import d'une ligne ────────────────────────────────────────────────────────
 async function importTicketRow(row: CsvRow2, index: number): Promise<ImportRowResult> {
-  const ref = String(row.Ref_Ticket ?? "").trim();
+  const ref = getCsvValue(row, ["Ref_Ticket", "RefTicket", "Num_Ticket"]);
+  const fallbackRef = ref || `AUTO-${index + 1}`;
   const titre = String(row.Titre ?? `Ticket-${index + 1}`);
 
   const result: ImportRowResult = {
@@ -88,12 +85,11 @@ async function importTicketRow(row: CsvRow2, index: number): Promise<ImportRowRe
 
   try {
     // ── Résolution des items (dédoublonnage + cache asset fichier 1) ──────────
-    const resolvedItems = resolveItems(row.Items);
-
+    const rawItems = row.Items || (row as any)["items"] || (row as any)["Items"];
+    const resolvedItems = resolveItems(rawItems);
     // ── Création du ticket ────────────────────────────────────────────────────
     const payload = buildTicketPayload(row);
     const res = await glpiPost<{ id: number }>("Assistance/Ticket", payload);
-
     // ── Liaison items ─────────────────────────────────────────────────────────
     const linkedNames = await linkItemsToTicket(res.id, resolvedItems);
 
@@ -107,7 +103,10 @@ async function importTicketRow(row: CsvRow2, index: number): Promise<ImportRowRe
     importCache.ticket.set(ref, res.id);
 
     // Stockage étendu pour fichier 3
+    importCache.ticket.set(fallbackRef, res.id);
     importCache.ticketDetail.set(ref, cachedTicket);
+
+    console.log(`[CACHE TIER 2] Ticket enregistré : Clé="${fallbackRef}" -> ID GLPI=${res.id}`);
 
     result.status = "success";
     result.glpiId = res.id;

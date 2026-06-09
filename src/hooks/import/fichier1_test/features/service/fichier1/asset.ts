@@ -1,8 +1,8 @@
 import { glpiPost } from "../../../../../../api/db_glpi";
-import { importCache } from "./importCaches";
+import { importCache } from "../importCaches";
 import { linkDocumentToAsset } from "./images";
 import type { CsvRow1, GlpiAssetPayload, ImageMap, PreloadCache, } from "../../types/fichier1";
-import type { ImportRowResult } from "../../../importResult";
+import type { ImportRowResult } from "../../importResult";
 import { getAssetRegistry } from "./assets_detail";
 
 function buildPayload(row: CsvRow1, cache: PreloadCache): GlpiAssetPayload {

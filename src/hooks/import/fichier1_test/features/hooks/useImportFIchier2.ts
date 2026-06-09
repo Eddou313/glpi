@@ -3,7 +3,7 @@ import { useState, useCallback, useRef } from "react";
 import { analyzeRows2 }   from "../service/fichier2/ticket.preload";
 import { importFichier2 } from "../service/fichier2/tickets";
 import type { CsvRow2 }          from "../types/fichier2";
-import type { ImportRowResult }  from "../../importResult";
+import type { ImportRowResult }  from "../importResult";
 
 export type ImportFichier2Phase =
   | "idle"
@@ -38,7 +38,10 @@ export function useImportFichier2(): UseImportFichier2Return {
     rows:       CsvRow2[],
     onProgress: (r: ImportRowResult) => void
   ): Promise<ImportRowResult[]> => {
-    reset();
+    // setPhase("idle");
+    setLiveResults([]);
+    setError(null);
+    resultsRef.current = [];
 
     try {
       // ── Phase 1 : analyse + dédoublonnage ──────────────────────────────────
@@ -62,7 +65,7 @@ export function useImportFichier2(): UseImportFichier2Return {
       setPhase("error");
       throw err;
     }
-  }, [reset]);
+  }, []);
 
   return { phase, liveResults, error, run, reset };
 }
