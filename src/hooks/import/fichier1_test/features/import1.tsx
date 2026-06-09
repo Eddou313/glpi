@@ -1,4 +1,3 @@
-// pages/Import.tsx
 import { useState } from "react";
 import { buildImageMapFromZip } from "../../zip";
 import { DeleteDataButton }     from "../../../../pages/import/Initialisation";
@@ -40,14 +39,12 @@ function Import() {
     }
 
     try {
-      // ── Images (optionnel) ────────────────────────────────────────────────
       let imageMap: Map<string, { blob: Blob; fileName: string }> | undefined;
       if (ver && zip) {
         imageMap = cleanImageMap(await buildImageMapFromZip(zip));
         console.log("ImageMap prête :", imageMap);
       }
 
-      // ── Parse CSV ─────────────────────────────────────────────────────────
       const [rows1, rows2, rows3] = await Promise.all([
         csv1
           ? parseFile<colonneCSV["fichier1"]>(
@@ -72,12 +69,11 @@ function Import() {
           : Promise.resolve([]),
       ]);
 
-      // ── Import orchestré ──────────────────────────────────────────────────
       await run({
         rows1:    rows1 as colonneCSV["fichier1"][],
         rows2:    rows2 as colonneCSV["fichier2"][],
         rows3:    rows3 as colonneCSV["fichier3"][],
-        imageMap,   // undefined si checkbox décochée ou pas de ZIP
+        imageMap,  
       });
 
     } catch (err) {

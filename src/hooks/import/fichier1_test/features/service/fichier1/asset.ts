@@ -39,7 +39,6 @@ export async function importAssetRow(
     };
 
     try {
-        // ── Résolution du type GLPI ───────────────────────────────────────────────
         const { itemTypeMap } = getAssetRegistry();
         const glpiItemType = itemTypeMap[row.Item_Type];
 
@@ -49,14 +48,10 @@ export async function importAssetRow(
             return result;
         }
 
-        // ── Payload (lecture cache O(1), zéro appel réseau) ───────────────────────
         const payload = buildPayload(row, cache);
 
-        // ── Création de l'asset ───────────────────────────────────────────────────
         const res = await glpiPost<{ id: number }>(`Assets/${glpiItemType}`, payload);
         importCache.asset.set(row.Name, { id: res.id, itemType: glpiItemType });
-
-        // ── Association image (optionnel) ─────────────────────────────────────────
         let imageMsg = "";
         const docEntry = cache.documents.get(row.Name.toLowerCase());
         if (docEntry && docEntry.docId > 0) {

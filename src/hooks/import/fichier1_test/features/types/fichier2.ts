@@ -1,7 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Types pour l'import fichier 2 — Tickets
-// ─────────────────────────────────────────────────────────────────────────────
-
 export interface CsvRow2 {
     Ref_Ticket: string | number;
     Date: string;
@@ -14,15 +10,13 @@ export interface CsvRow2 {
     Items: string | string[];
 }
 
-// ── Cache ticket retourné après création ──────────────────────────────────────
 export interface CachedTicket {
-    id: number;   // GLPI ticket id
-    ref: string;   // Ref_Ticket normalisé (string)
-    name: string;   // Titre
-    date: string;   // ISO
+    id: number;   
+    ref: string;  
+    name: string;
+    date: string; 
 }
 
-// ── Payload POST GLPI ─────────────────────────────────────────────────────────
 export interface GlpiTicketPayload {
     name: string;
     content: string;
@@ -33,8 +27,7 @@ export interface GlpiTicketPayload {
     priority: number;
     status: { id: number };
 }
-// ── Status tickets ────────────────────────────────────────────────────────────
-// 1=Nouveau  2=En cours(Attribué)  3=En cours(Planifié)  4=En attente  5=Résolu  6=Clos
+
 export const TICKET_STATUS_MAP: Record<string, number> = {
     // Français
     "Nouveau": 1,
@@ -54,7 +47,6 @@ export const TICKET_STATUS_MAP: Record<string, number> = {
 };
 
 // ── Urgence / Impact / Priorité ───────────────────────────────────────────────
-// 1=Très basse  2=Basse  3=Moyenne  4=Haute  5=Très haute  6=Majeure
 export const TICKET_PRIORITY_MAP: Record<string, number> = {
     // Français
     "Très basse": 1,
@@ -84,7 +76,3 @@ export const TICKET_TYPE_MAP: Record<string, number> = {
     // Anglais
     "Request": 2,
 };
-// Staus : Nouveau , En cours(Attribuer),En cours(Planifie),En attente,Resolu,Clos
-// Urgence : Très haute,haute, Moyenne,Basse,tres basse
-// Impact : Très haute,haute, Moyenne,Basse,tres basse
-// Priority : Très haute,haute, Moyenne,Basse,tres basse

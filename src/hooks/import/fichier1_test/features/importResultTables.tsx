@@ -1,7 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-//  components/ImportResultTable.tsx
-// ─────────────────────────────────────────────────────────────────────────────
-
 import type { ImportRowResult } from "./importResult";
 
 interface Props {
@@ -9,9 +5,9 @@ interface Props {
 }
 
 const ICON: Record<ImportRowResult["status"], string> = {
-  success: "✅",
-  error:   "❌",
-  skipped: "⊘",
+  success: "ok",
+  error:   "fahhh",
+  skipped: "passe",
 };
 
 const ROW_CLASS: Record<ImportRowResult["status"], string> = {

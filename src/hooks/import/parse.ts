@@ -86,7 +86,6 @@ export const parseFile = <T>(
     });
 };
 
-// Vérifie les noms des colonnes
 export function validateColumnNames(csvColumns: string[], // colonnes trouvées dans le CSV
     expectedColumns: (keyof any)[] // colonnes attendues
 ): void {

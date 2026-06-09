@@ -27,7 +27,7 @@ export function getCsvValue(row: any, keys: string[]): string {
   }
   return "";
 }
-// ── Parse la colonne Items (string, JSON array, ou tableau déjà parsé) ─────────
+
 export function parseItems(raw: unknown): string[] {
   if (!raw) return [];
   if (Array.isArray(raw)) return [...new Set(raw.map(String).map(s => s.trim()).filter(Boolean))];
@@ -42,8 +42,6 @@ export function parseItems(raw: unknown): string[] {
   return s ? [s] : [];
 }
 
-// ── Résout les items d'une ligne depuis le cache asset (fichier 1) ─────────────
-// Supprime les doublons et les items introuvables en cache
 export function resolveItems(raw: unknown): ResolvedItem[] {
   const names = parseItems(raw);
   const seen = new Set<string>();
@@ -58,9 +56,7 @@ export function resolveItems(raw: unknown): ResolvedItem[] {
     seen.add(key);
 
     // Recherche adaptative (Brut, puis Minuscule, puis Majuscule)
-    const cached = importCache.asset.get(name) || 
-                   importCache.asset.get(name.toLowerCase()) || 
-                   importCache.asset.get(name.toUpperCase());
+    const cached = importCache.asset.get(name) || importCache.asset.get(name.toLowerCase()) || importCache.asset.get(name.toUpperCase());
 
     if (!cached) {
       console.warn(`[Ticket] Item introuvable en cache : "${name}" — ignoré`);
@@ -73,7 +69,6 @@ export function resolveItems(raw: unknown): ResolvedItem[] {
   return resolved;
 }
 
-// ── Collecte les stats de pré-chargement (log) ────────────────────────────────
 export function analyzeRows2(rows: CsvRow2[]): void {
   const refs   = new Set<string>();
   const items  = new Set<string>();

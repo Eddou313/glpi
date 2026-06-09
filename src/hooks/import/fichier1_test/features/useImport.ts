@@ -1,4 +1,3 @@
-// hooks/useImport.ts
 import { useState, useCallback } from "react";
 import { importCache } from "./service/importCaches";
 import { loadAssetRegistry } from "./service/fichier1/assets_detail";
@@ -9,8 +8,9 @@ import { buildSummary, type ImportRowResult, type ImportSummary} from "./importR
 import type { CsvRow1, ImageMap } from "./types/fichier1";
 import { useImportFichier2 } from "./hooks/useImportFIchier2";
 import type { CsvRow2 } from "./types/fichier2";
-import { useImportFichier3 } from "./hooks/useImportFichier3";
+
 import type { CsvRow3 } from "./types/fichier3";
+import { useImportFichier3 } from "./hooks/useImportFichier3";
 
 export type FichierLabel = "fichier1" | "fichier2" | "fichier3";
 
@@ -77,7 +77,6 @@ export function useImport(): UseImportReturn {
   }, []);
 
   const run = useCallback(async ({ rows1, rows2, rows3, imageMap }: RunArgs) => {
-    // ── Init ──────────────────────────────────────────────────────────────────
     setImporting(true);
     setPhase("idle");
     setLiveResults([]);
@@ -90,44 +89,35 @@ export function useImport(): UseImportReturn {
     const all: FichierSummary[] = [];
 
     try {
-      // ── Phase 0 : registre des types GLPI (singleton, 1 seul appel réseau) ─
       setPhase("registry");
       await loadAssetRegistry();
 
-      // ── Fichier 1 : équipements ───────────────────────────────────────────
       if (rows1.length > 0) {
-        // Phase 1 : pré-chargement parallèle des données indépendantes
         setPhase("preloading");
         setCurrentFile("fichier1");
         const cache = await preloadFichier1(rows1 as CsvRow1[]);
 
-        // Phase 2 : insertion séquentielle des assets
         setPhase("importing");
         const r1 = await importAllAssets(rows1 as CsvRow1[], cache, push, imageMap);
         all.push({ label: "fichier1", summary: buildSummary(r1) });
         setSummaries([...all]);
       }
 
-      // ── Fichier 2 : tickets ───────────────────────────────────────────────
       if (rows2.length > 0) {
         setPhase("preloading");
         setCurrentFile("fichier2");
 
         setPhase("importing");
         const r2 = await runFichier2(rows2 as unknown as CsvRow2[], push);
-        // ↑ fichier2.run gère analyzeRows2 + import + cache.ticketDetail en interne
 
         all.push({ label: "fichier2", summary: buildSummary(r2) });
         setSummaries([...all]);
       }
 
-      // ── Fichier 3 : coûts tickets ─────────────────────────────────────────
-      // Prérequis : importCache.ticket rempli par fichier 2
       if (rows3.length > 0) {
         setPhase("importing");
         setCurrentFile("fichier3");
         const r3 = await runFichier3(rows3 as unknown as CsvRow3[], push);
-        // ↑ gère analyzeRows3 + vérification cache + import des coûts
 
         all.push({ label: "fichier3", summary: buildSummary(r3) });
         setSummaries([...all]);

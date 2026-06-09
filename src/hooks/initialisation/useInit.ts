@@ -76,7 +76,6 @@ async function deleteAllUsersExceptSystem(): Promise<number> {
 
     if (SAFE_USERS.has(login)) return false;
 
-    // utilisateurs protégés GLPI
     if ([1, 2, 3, 6].includes(Number(u.id))) {
       return false;
     }
@@ -123,7 +122,6 @@ export function useDeleteAllData() {
     error: null,
     steps: [],
   });
-  importCache.clear();
   const run = useCallback(async () => {
     const steps: Step[] = [
       ...RESOURCES.map(r => ({
@@ -163,27 +161,17 @@ export function useDeleteAllData() {
 
     try {
       await deleteAllStates();
-      /* =========================
-         Tickets + Assets
-      ========================= */
 
       for (let i = 0; i < RESOURCES.length; i++) {
         steps[i].status = 'running';
         refresh();
-
-        const count = await deleteAllOf(
-          RESOURCES[i].path
-        );
+        const count = await deleteAllOf(RESOURCES[i].path);
 
         steps[i].status = 'done';
         steps[i].detail = `${count} supprimé(s)`;
 
         refresh();
       }
-
-      /* =========================
-         Utilisateurs
-      ========================= */
 
       const userStepIndex = RESOURCES.length;
 
@@ -199,10 +187,6 @@ export function useDeleteAllData() {
 
       refresh();
 
-      /* =========================
-         Locations
-      ========================= */
-
       const locationStepIndex =
         RESOURCES.length + 1;
 
@@ -217,10 +201,6 @@ export function useDeleteAllData() {
         `${deletedLocations} location(s) supprimée(s)`;
 
       refresh();
-
-      /* =========================
-         Fabricants
-      ========================= */
 
       const manufacturerStepIndex =
         RESOURCES.length + 2;
@@ -241,10 +221,6 @@ export function useDeleteAllData() {
         `${deletedManufacturers} fabricant(s) supprimé(s)`;
 
       refresh();
-
-      /* =========================
-         Modèles
-      ========================= */
 
       const modelStepIndex =
         RESOURCES.length + 3;
@@ -280,10 +256,6 @@ export function useDeleteAllData() {
 
       refresh();
 
-      /* =========================
-         FIN
-      ========================= */
-
       setState({
         running: false,
         done: true,
@@ -296,9 +268,7 @@ export function useDeleteAllData() {
       setState({
         running: false,
         done: false,
-        error:
-          err?.message ??
-          'Erreur inconnue',
+        error:err?.message ??'Erreur inconnue',
         steps: [...steps],
       });
 
@@ -306,6 +276,7 @@ export function useDeleteAllData() {
   }, []);
 
   const reset = useCallback(() => {
+    importCache.clear();
     setState({
       running: false,
       done: false,

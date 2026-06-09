@@ -1,7 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Hook React : orchestre le pré-chargement + l'import des assets du fichier 1
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { useCallback, useRef, useState } from "react";
 import { preloadFichier1 } from "../service/fichier1/preload";
 import { importAllAssets } from "../service/fichier1/asset";
@@ -44,15 +40,12 @@ export function useImportFichier1(): UseImportFichier1Return {
         async ({ rows, imageMap, onProgress }: ImportFichier1Params) => {
             reset();
             try {
-                // ── Phase 0 : registre des types GLPI ───────────────────────────────
                 setPhase("registry");
-                await loadAssetRegistry();          // no-op si déjà chargé (cache singleton)
+                await loadAssetRegistry();         
 
-                // ── Phase 1 : pré-chargement parallèle ──────────────────────────────
                 setPhase("preloading");
                 const cache = await preloadFichier1(rows);
 
-                // ── Phase 2 : import séquentiel ──────────────────────────────────────
                 setPhase("importing");
                 const results = await importAllAssets(rows, cache, (r) => {
                     resultsRef.current = [...resultsRef.current, r];

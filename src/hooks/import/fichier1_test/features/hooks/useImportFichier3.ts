@@ -1,12 +1,9 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Hook React : orchestre l'analyse + import des coûts tickets (fichier 3)
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { useState, useCallback, useRef } from "react";
 import { analyzeRows3 } from "../service/fichier3/cost.preload"
 import { importFichier3 } from "../service/fichier3/const";
 import type { CsvRow3 } from "../types/fichier3";
 import type { ImportRowResult } from "../importResult";
+import { importCache } from "../service/importCaches";
 
 export type ImportFichier3Phase =
     | "idle"
@@ -51,10 +48,13 @@ export function useImportFichier3(): UseImportFichier3Return {
         resultsRef.current = [];
 
         try {
-            // ── Phase 1 : analyse + vérification cache tickets ──────────────────────
             setPhase("analyzing");
             const analysis = analyzeRows3(rows);
             setMissingRefs(analysis.missing);
+
+            console.log("[Fichier3] Cache tickets:", importCache.ticket);
+            console.log("[Fichier3] Missing refs:", analysis.missing);
+
 
             if (analysis.resolvable === 0) {
                 throw new Error(
@@ -63,7 +63,6 @@ export function useImportFichier3(): UseImportFichier3Return {
                 );
             }
 
-            // ── Phase 2 : import séquentiel des coûts ──────────────────────────────
             setPhase("importing");
             const results = await importFichier3(rows, (r) => {
                 resultsRef.current = [...resultsRef.current, r];
@@ -73,7 +72,6 @@ export function useImportFichier3(): UseImportFichier3Return {
 
             setPhase("done");
             return results;
-
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
             setError(msg);

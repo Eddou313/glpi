@@ -1,7 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-//  types/importResult.ts
-// ─────────────────────────────────────────────────────────────────────────────
-
 export type RowStatus = "success" | "error" | "skipped";
 
 export interface ImportRowResult {

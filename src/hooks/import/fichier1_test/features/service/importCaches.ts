@@ -9,10 +9,10 @@ class ImportCache {
   readonly location     = new Map<string, number>();
   readonly manufacturer = new Map<string, number>();
   readonly model        = new Map<string, number>();
-  readonly user         = new Map<string, number>(); // fullName → id (0 = anonyme)
-  readonly asset        = new Map<string, CachedAsset>(); // Name → { id, itemType }
+  readonly user         = new Map<string, number>(); 
+  readonly asset        = new Map<string, CachedAsset>(); 
   readonly ticket       = new Map<string, number>(); 
-  readonly ticketDetail  = new Map<string, CachedTicket>();      // Ref_Ticket → id
+  readonly ticketDetail  = new Map<string, CachedTicket>();    
 
   clear() {
     this.location.clear();
@@ -25,5 +25,4 @@ class ImportCache {
   }
 }
 
-/** Singleton partagé sur toute la durée de la session d'import */
 export const importCache = new ImportCache();

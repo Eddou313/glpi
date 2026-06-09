@@ -21,7 +21,6 @@ function toIso(date: string, heure: string): string {
   }
 }
 
-// ── Construction du payload ticket ───────────────────────────────────────────
 function buildTicketPayload(row: CsvRow2): Record<string, unknown> {
   const statusId = TICKET_STATUS_MAP[row.Status] ?? 1;
   const priorityId = TICKET_PRIORITY_MAP[row.Priority] ?? 3;
@@ -70,7 +69,6 @@ async function linkItemsToTicket(
   return linked;
 }
 
-// ── Import d'une ligne ────────────────────────────────────────────────────────
 async function importTicketRow(row: CsvRow2, index: number): Promise<ImportRowResult> {
   const ref = getCsvValue(row, ["Ref_Ticket", "RefTicket", "Num_Ticket"]);
   const fallbackRef = ref || `AUTO-${index + 1}`;
@@ -84,16 +82,14 @@ async function importTicketRow(row: CsvRow2, index: number): Promise<ImportRowRe
   };
 
   try {
-    // ── Résolution des items (dédoublonnage + cache asset fichier 1) ──────────
     const rawItems = row.Items || (row as any)["items"] || (row as any)["Items"];
     const resolvedItems = resolveItems(rawItems);
-    // ── Création du ticket ────────────────────────────────────────────────────
+
     const payload = buildTicketPayload(row);
     const res = await glpiPost<{ id: number }>("Assistance/Ticket", payload);
-    // ── Liaison items ─────────────────────────────────────────────────────────
+
     const linkedNames = await linkItemsToTicket(res.id, resolvedItems);
 
-    // ── Stockage dans cache partagé (utilisé par fichier 3) ───────────────────
     const cachedTicket: CachedTicket = {
       id: res.id,
       ref,
@@ -102,7 +98,6 @@ async function importTicketRow(row: CsvRow2, index: number): Promise<ImportRowRe
     };
     importCache.ticket.set(ref, res.id);
 
-    // Stockage étendu pour fichier 3
     importCache.ticket.set(fallbackRef, res.id);
     importCache.ticketDetail.set(ref, cachedTicket);
 
@@ -124,7 +119,6 @@ async function importTicketRow(row: CsvRow2, index: number): Promise<ImportRowRe
   return result;
 }
 
-// ── Point d'entrée public ─────────────────────────────────────────────────────
 export async function importFichier2(
   rows: CsvRow2[],
   onProgress: (r: ImportRowResult) => void

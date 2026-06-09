@@ -1,9 +1,9 @@
-// hooks/useImportFichier2.ts
 import { useState, useCallback, useRef } from "react";
 import { analyzeRows2 }   from "../service/fichier2/ticket.preload";
 import { importFichier2 } from "../service/fichier2/tickets";
 import type { CsvRow2 }          from "../types/fichier2";
 import type { ImportRowResult }  from "../importResult";
+import { importCache } from "../service/importCaches";
 
 export type ImportFichier2Phase =
   | "idle"
@@ -44,19 +44,16 @@ export function useImportFichier2(): UseImportFichier2Return {
     resultsRef.current = [];
 
     try {
-      // ── Phase 1 : analyse + dédoublonnage ──────────────────────────────────
       setPhase("analyzing");
       analyzeRows2(rows);
 
-      // ── Phase 2 : import séquentiel ────────────────────────────────────────
       setPhase("importing");
       const results = await importFichier2(rows, (r) => {
         resultsRef.current = [...resultsRef.current, r];
         setLiveResults([...resultsRef.current]);
         onProgress(r);
       });
-
-      setPhase("done");
+      console.log("Résultats import Fichier 2 cache :",importCache.ticket);
       return results;
 
     } catch (err) {

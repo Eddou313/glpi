@@ -1,7 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Upload image + liaison Document↔Asset via GLPI v1
-// ─────────────────────────────────────────────────────────────────────────────
-
 import  { glpiPostV1 } from "../../../../../../api/db_glpi";
 import type { ImageMap, CachedDocument } from "../../types/fichier1";
 
@@ -13,8 +9,6 @@ const MIME_MAP: Record<string, string> = {
   webp: "image/webp",
 };
 
-// ── Phase 1 : upload du fichier → crée un Document GLPI, retourne son id ─────
-
 async function uploadDocument(
   assetName:  string,
   imageEntry: { blob: Blob; fileName: string }
@@ -24,8 +18,6 @@ async function uploadDocument(
     const ext  = fileName.split(".").pop()?.toLowerCase() ?? "jpg";
     const mime = MIME_MAP[ext] ?? "application/octet-stream";
 
-    // GLPI v1 upload : multipart/form-data
-    // Le champ "uploadManifest" décrit le document, "filename[0]" est le fichier
     const form = new FormData();
     form.append(
       "uploadManifest",
@@ -47,7 +39,6 @@ async function uploadDocument(
       headers: {
         "Session-Token": token ?? "",
         ...(appToken ? { "App-Token": appToken } : {}),
-        // PAS de Content-Type ici — le browser le met automatiquement avec boundary
       },
       body: form,
     });
@@ -66,8 +57,6 @@ async function uploadDocument(
     return null;
   }
 }
-
-// ── Phase 2 : liaison Document↔Asset après création de l'asset ───────────────
 
 export async function linkDocumentToAsset(
   assetId:     number,
@@ -91,8 +80,6 @@ export async function linkDocumentToAsset(
     return false;
   }
 }
-
-// ── Pré-chargement : upload de toutes les images, stockage en cache ───────────
 
 export async function preloadImages(
   imageMap:  ImageMap,

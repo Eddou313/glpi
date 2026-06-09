@@ -1,49 +1,82 @@
-import { linkDocumentToAsset } from "./image.service";
+export function useDeleteAllData() {
+  const [state, setState] = useState<DeleteState>({
+    running: false,
+    done: false,
+    error: null,
+    steps: [],
+  });
 
-export async function importAssetRow(
-  row:      CsvRow1,
-  index:    number,
-  cache:    PreloadCache,
-  imageMap?: ImageMap        // gardé pour compatibilité mais plus utilisé directement
-): Promise<ImportRowResult> {
+  const run = useCallback(async () => {
+    const steps: Step[] = [
+      ...RESOURCES.map(r => ({
+        label: r.label,
+        status: 'pending' as StepStatus,
+      })),
+      {
+        label: 'Utilisateurs',
+        status: 'pending',
+      },
+      {
+        label: 'Locations',
+        status: 'pending',
+      },
+      {
+        label: 'Fabricants',
+        status: 'pending',
+      },
+      {
+        label: 'Modèles',
+        status: 'pending',
+      },
+    ];
 
-  const result: ImportRowResult = {
-    row: index + 1, name: row.Name,
-    itemType: row.Item_Type, status: "error", message: "",
+    const refresh = () =>
+      setState(s => ({
+        ...s,
+        steps: [...steps],
+      }));
+
+    setState({
+      running: true,
+      done: false,
+      error: null,
+      steps: [...steps],
+    });
+
+    try {
+      await deleteAllStates();
+
+      // ... reste du code inchangé
+
+      setState({
+        running: false,
+        done: true,
+        error: null,
+        steps: [...steps],
+      });
+    } catch (err: any) {
+      setState({
+        running: false,
+        done: false,
+        error: err?.message ?? 'Erreur inconnue',
+        steps: [...steps],
+      });
+    }
+  }, []);
+
+  const reset = useCallback(() => {
+    importCache.clear();
+    setState({
+      running: false,
+      done: false,
+      error: null,
+      steps: [],
+    });
+  }, []);
+
+  return {
+    state,
+    run,
+    reset,
   };
-
-  try {
-    const { itemTypeMap } = getAssetRegistry();
-    const glpiItemType = itemTypeMap[row.Item_Type];
-
-    if (!glpiItemType) {
-      result.status  = "skipped";
-      result.message = `Type inconnu : "${row.Item_Type}"`;
-      return result;
-    }
-
-    // ── Création de l'asset ───────────────────────────────────────────────────
-    const payload = buildPayload(row, cache);
-    const res     = await glpiPost<{ id: number }>(`Assets/${glpiItemType}`, payload);
-    importCache.asset.set(row.Name, { id: res.id, itemType: glpiItemType });
-
-    // ── Liaison document (le docId est déjà dans le cache, zéro upload ici) ──
-    let imageMsg = "";
-    const docEntry = cache.documents.get(row.Name.toLowerCase());
-    if (docEntry && docEntry.docId > 0) {
-      const linked = await linkDocumentToAsset(res.id, glpiItemType, docEntry.docId);
-      imageMsg = linked
-        ? ` | Image liée → Document #${docEntry.docId}`
-        : ` | Image : liaison échouée (Document #${docEntry.docId} existe)`;
-    }
-
-    result.status  = "success";
-    result.glpiId  = res.id;
-    result.message = `Créé → GLPI #${res.id}${imageMsg}`;
-
-  } catch (err) {
-    result.message = err instanceof Error ? err.message : String(err);
-  }
-
-  return result;
 }
