@@ -12,6 +12,7 @@ import { DashboardPage } from "../pages/dashbord/DashbordPages"
 import { FrontOfficeLayout } from "../pages/inc/layout"
 import Imports from "../hooks/import/fichier1_test/features/import1"
 import { ParameterPages } from "../pages/parameter/ParameterPages"
+import TicketKanban from "../pages/FrontOffice/Tickets/TicketKanban"
 
 // import ImportApiPage from "../pages/ImportAPi"
 function AppRouter() {
@@ -33,6 +34,7 @@ function AppRouter() {
           {/* frontoffice */}
           <Route element={<FrontOfficeLayout />}>
             <Route path="/elements"       element={<ItemsPage />} />
+            <Route path="/TicketView" element={<TicketKanban />} />
             <Route path="/tickets/create" element={<CreateTicketPage />} />
           </Route>
 

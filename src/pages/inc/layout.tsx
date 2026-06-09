@@ -1,10 +1,11 @@
 import { Outlet, NavLink } from "react-router-dom";
-import { Monitor, PlusCircle, ShieldCheck } from "lucide-react";
+import { Monitor, PlusCircle, ShieldCheck ,List } from "lucide-react";
 import "./layout.css";
 
 const NAV_LINKS = [
   { to: "/elements",       label: "Éléments",        icon: Monitor    },
   { to: "/tickets/create", label: "Créer un ticket",  icon: PlusCircle },
+  { to: "/TicketView",     label: "Vue des tickets",  icon: List  },
 ];
 
 function FrontNavbar() {

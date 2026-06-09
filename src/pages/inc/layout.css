@@ -21,10 +21,18 @@
   color: var(--color-text);
 }
 
+/* CORRECTION : Largeur fixée à 80% du point de vue */
 .front-layout__content {
-  max-width: 900px;
+  width: 80%;
+  max-width: 1400px; /* Sécurité pour éviter l'étirement excessif sur très grand écran */
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: 2rem 0;   /* Ajusté à 0 sur les côtés car le width à 80% gère déjà les marges */
+}
+
+@media (max-width: 768px) {
+  .front-layout__content {
+    width: 90%;      /* Plus d'espace disponible sur tablette / mobile */
+  }
 }
 
 /* ─── Navbar frontoffice (horizontale en haut) ───────────────────────────── */
