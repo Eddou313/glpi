@@ -124,7 +124,7 @@ export function useImport(): UseImportReturn {
       }
 
       setPhase("done");
-
+      console.log("vita tompoko !");
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(msg);
