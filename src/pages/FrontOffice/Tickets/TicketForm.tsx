@@ -3,6 +3,7 @@ import { useItems } from "../../../hooks/FrontOffice/elements/useItems";
 import { useCreateTicket } from "../../../hooks/FrontOffice/tickets/useCreateTickets";
 import { useCategory } from "../../../hooks/category/useCategory";
 import "./tickets.css";
+import type { GlpiAsset } from "../../../types/elements/items.types";
 
 export function CreateTicketPage() {
   const { items } = useItems();
@@ -15,7 +16,7 @@ export function CreateTicketPage() {
   const [impact, setImpact] = useState<number>(3);
   const [categoryId, setCategoryId] = useState<string>("");
 
-  const [selectedItems, setSelectedItems] = useState<number[]>([]);
+  const [selectedItems, setSelectedItems] = useState<GlpiAsset[]>([]);
   const [itemSearch, setItemSearch] = useState("");
 
   const filteredItems = items.filter((item) => {
@@ -44,17 +45,15 @@ export function CreateTicketPage() {
         category: { id: Number(categoryId) },
       }),
 
-      items: selectedItems.map((id) => {
-        const item = items.find((i) => i.id === id);
-
+      items: selectedItems.map((item) => {
         return {
-          id,
-          itemtype: item?.itemType || "Computer",
+          id: item.id,
+          itemtype: item.itemType || "Computer",
         };
       }),
     };
 
-    const result = await create(body);
+    const result = await create(body,selectedItems);
 
     if (result) {
       alert("Ticket créé avec succès !");
@@ -160,12 +159,12 @@ export function CreateTicketPage() {
               >
                 <input
                   type="checkbox"
-                  checked={selectedItems.includes(item.id)}
+                  checked={selectedItems.includes(item)}
                   onChange={(e) => {
                     if (e.target.checked) {
-                      setSelectedItems([...selectedItems, item.id]);
+                      setSelectedItems([...selectedItems, item]);
                     } else {
-                      setSelectedItems(selectedItems.filter((x) => x !== item.id));
+                      setSelectedItems(selectedItems.filter((x) => x.id !== item.id));
                     }
                   }}
                 />

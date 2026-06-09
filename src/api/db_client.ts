@@ -77,3 +77,13 @@ export async function glpiFetchClient<T>(
 
     return JSON.parse(text) as T;
 }
+
+export const glpiGet = <T>(path: string) => glpiFetchClient<T>('GET', path);
+
+export const glpiPost = <T>(path: string, body: unknown) => glpiFetchClient<T>('POST', path, body);
+
+export const glpiPut = <T>(path: string, body: unknown) => glpiFetchClient<T>('PUT', path, body);
+
+export const glpiPatch = <T>(path: string, body: unknown) => glpiFetchClient<T>('PATCH', path, body);
+
+export const glpiDelete = <T>(path: string) => glpiFetchClient<T>('DELETE', path);

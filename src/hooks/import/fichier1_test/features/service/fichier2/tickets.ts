@@ -39,7 +39,7 @@ function buildTicketPayload(row: CsvRow2): Record<string, unknown> {
   };
 }
 
-async function linkItemsToTicket(
+export async function linkItemsToTicket(
   ticketId: number,
   items: { id: number; itemType: string; name: string }[]
 ): Promise<string[]> {
