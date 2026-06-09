@@ -5,7 +5,7 @@ import fs from 'fs';
 const dataDir = path.resolve(process.cwd(), 'data');
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
 
-const dbPath = path.join(dataDir, 'db.sqlite');
+const dbPath = path.join(dataDir, 'glpi_parameter.sqlite');
 type Db = ReturnType<typeof Database>;
 const db: Db = new Database(dbPath);
 
