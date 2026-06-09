@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import {LayoutDashboard,Ticket,FileInput,LogOut,ChevronLeft,ChevronRight,} from 'lucide-react';
+import {LayoutDashboard,Ticket,FileInput,LogOut,ChevronLeft,ChevronRight,Settings} from 'lucide-react';
 import { invalidateGLPIToken } from '../../api/db_glpi';
 import './nav.css';
 
@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { to: '/Dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
   { to: '/tickets',   label: 'Tickets',          icon: Ticket          },
   { to: '/import',    label: 'Import',            icon: FileInput       },
+  { to: '/Parameter',    label: 'Paramettre',            icon: Settings       },
 ];
 
 export function Navbar() {
