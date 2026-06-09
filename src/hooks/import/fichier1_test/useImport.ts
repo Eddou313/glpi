@@ -10,6 +10,8 @@ import { importAllAssets }    from "./features/service/fichier1/asset";
 import type { colonneCSV }           from "../../../types/import/fichier";
 import type { ImportRowResult, ImportSummary } from "./importResult";
 import type { CsvRow1, ImageMap }    from "./features/types/fichier1";
+import { useImportFichier2 } from "./features/hooks/useImportFIchier2";
+import type { CsvRow2 } from "./features/types/fichier2";
 
 export type FichierLabel = "fichier1" | "fichier2" | "fichier3";
 
@@ -51,6 +53,7 @@ export function useImport(): UseImportReturn {
   const [liveResults, setLiveResults] = useState<ImportRowResult[]>([]);
   const [summaries,   setSummaries]   = useState<FichierSummary[]>([]);
   const [error,       setError]       = useState<string | null>(null);
+  const fichier2 = useImportFichier2();
 
   const push = useCallback((r: ImportRowResult) => {
     setLiveResults((prev) => [...prev, r]);
@@ -98,9 +101,13 @@ export function useImport(): UseImportReturn {
 
       // ── Fichier 2 : tickets ───────────────────────────────────────────────
       if (rows2.length > 0) {
-        setPhase("importing");
+        setPhase("preloading");
         setCurrentFile("fichier2");
-        const r2 = await importFichier2(rows2, push);
+
+        setPhase("importing");
+        const r2 = await fichier2.run(rows2 as unknown as CsvRow2[], push);
+        // ↑ fichier2.run gère analyzeRows2 + import + cache.ticketDetail en interne
+
         all.push({ label: "fichier2", summary: buildSummary(r2) });
         setSummaries([...all]);
       }

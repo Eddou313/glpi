@@ -1,5 +1,5 @@
 
-import { glpiPost, glpiPostV1 } from "../../../../../../api/db_glpi";
+import { glpiPost, glpiPostV1, initV1Session } from "../../../../../../api/db_glpi";
 import type { CsvRow1, CachedStatus, CachedLocation, CachedManufacturer, CachedModel, CachedUser, PreloadCache, CachedDocument, ImageMap, } from "../../types/fichier1";
 import { getAssetRegistry } from "./assets_detail";
 import { preloadImages } from "./images";
@@ -10,8 +10,8 @@ async function upsertStatus(
 ): Promise<void> {
     const key = label.trim();
     if (!key || cache.has(key)) return;
-
     try {
+        await await initV1Session(true);
         // State nécessite les droits admin → on passe par la session v1
         const res = await glpiPostV1<{ id: number }>("State", {
             input: [

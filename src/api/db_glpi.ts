@@ -1,15 +1,15 @@
 const API_BASE_URL = import.meta.env.VITE_GLPI_API_URL || '/glpi-api';
-const CLIENT_ID     = import.meta.env.VITE_GLPI_CLIENT_ID;
+const CLIENT_ID = import.meta.env.VITE_GLPI_CLIENT_ID;
 const CLIENT_SECRET = import.meta.env.VITE_GLPI_CLIENT_SECRET;
-const GLPI_USER     = import.meta.env.VITE_GLPI_USER;
-const APP_TOKEN     = import.meta.env.VITE_GLPI_APP_TOKEN;     // obligatoire pour v1
-const V1_BASE       = import.meta.env.VITE_GLPI_LEGACY_API_URL || `${API_BASE_URL.replace('/glpi-api', '')}/apirest.php`;
+const GLPI_USER = import.meta.env.VITE_GLPI_USER;
+const APP_TOKEN = import.meta.env.VITE_GLPI_APP_TOKEN;     // obligatoire pour v1
+const V1_BASE = import.meta.env.VITE_GLPI_LEGACY_API_URL || `${API_BASE_URL.replace('/glpi-api', '')}/apirest.php`;
 const USER_TOKEN = import.meta.env.VITE_GLPI_USER_TOKEN;
 
 let cachedToken: string | null = localStorage.getItem("glpi_token");
 let cachedToken2: string | null = localStorage.getItem("glpi_token_legacy");
 
-const TOKEN_LIFETIME = 24 * 60 * 60 * 1000; 
+const TOKEN_LIFETIME = 24 * 60 * 60 * 1000;
 let tokenExpiresAt: number = Number(localStorage.getItem("glpi_token_exp") || 0);
 
 let _v1SessionToken: string | null = localStorage.getItem("glpi_v1_session");
@@ -86,7 +86,7 @@ export async function glpiFetch<T>(
   body?: unknown,
   options: RequestInit = {},
 ): Promise<T> {
-  const token = cachedToken ||localStorage.getItem("glpi_token");
+  const token = cachedToken || localStorage.getItem("glpi_token");
 
   if (!token) {
     throw new Error("Aucun token GLPI disponible (non connecté)");
@@ -99,7 +99,7 @@ export async function glpiFetch<T>(
     Accept: 'application/json',
     ...(options.headers as Record<string, string> ?? {})
   };
-  
+
 
   if (method !== 'GET') {
     headers['Content-Type'] = 'application/json';
@@ -150,47 +150,57 @@ export function getToken() {
 }
 
 //  v1
-export async function initV1Session(): Promise<string> {
-  if (_v1SessionToken) return _v1SessionToken;
+export async function initV1Session(force = false): Promise<string> {
+  // ── Si force ou token en mémoire absent → nouvelle session ───────────────
+  if (!force && _v1SessionToken) return _v1SessionToken;
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    "App-Token": APP_TOKEN,
-    "Authorization": `user_token ${USER_TOKEN}`,
-  };
+  // Vider l'ancien token avant de réinitialiser
+  _v1SessionToken = null;
+  localStorage.removeItem("glpi_v1_session");
+
+  if (!USER_TOKEN) throw new Error("USER_TOKEN manquant dans .env");
+  if (!APP_TOKEN)  throw new Error("APP_TOKEN manquant dans .env");
 
   const res = await fetch(`${V1_BASE}/initSession`, {
     method: "GET",
-    headers,
+    headers: {
+      "Content-Type": "application/json",
+      "App-Token":    APP_TOKEN,
+      "Authorization": `user_token ${USER_TOKEN}`,
+    },
   });
 
   const text = await res.text();
-
   if (!res.ok) {
     throw new Error(`[GLPI v1] initSession → HTTP ${res.status}\n${text}`);
   }
 
   const data = JSON.parse(text);
-
-  _v1SessionToken = data.session_token;
-
-  // only store if we have a non-null session token
-  if (_v1SessionToken) {
-    localStorage.setItem("glpi_v1_session", _v1SessionToken);
+  if (!data?.session_token) {
+    throw new Error("[GLPI v1] session_token absent de la réponse");
   }
 
-  return _v1SessionToken || "";
+  _v1SessionToken = data.session_token;
+  localStorage.setItem("glpi_v1_session", _v1SessionToken!);
+  console.log("[GLPI v1] Nouvelle session ouverte");
+
+  return _v1SessionToken!;
 }
+
 export function invalidateV1Session(): void {
   _v1SessionToken = null;
   localStorage.removeItem("glpi_v1_session");
 }
+
 export async function glpiFetchV1<T>(
-  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
-  path:   string,
-  body?:  unknown,
+  method:  "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
+  path:    string,
+  body?:   unknown,
+  retry = true
 ): Promise<T> {
-  const session = _v1SessionToken || await initV1Session();
+  // Toujours utiliser le token en mémoire — jamais celui du localStorage seul
+  // car il peut être expiré depuis la dernière session
+  const session = _v1SessionToken ?? await initV1Session();
 
   const headers: Record<string, string> = {
     "Content-Type":  "application/json",
@@ -207,20 +217,22 @@ export async function glpiFetchV1<T>(
   const text = await res.text();
 
   if (!res.ok) {
-    // Si la session a expiré, on la regénère et on réessaie une fois
-    if (res.status === 401) {
-      return glpiFetchV1<T>(method, path, body);
+    // Token invalide ou expiré → on réinitialise et on réessaie une seule fois
+    if ((res.status === 401 || res.status === 403) && retry) {
+      console.warn(`[GLPI v1] Session invalide (${res.status}) — réinitialisation…`);
+      invalidateV1Session();
+      await initV1Session(true);  // force = true
+      return glpiFetchV1<T>(method, path, body, false); // retry=false pour éviter boucle
     }
-    console.error("[GLPI v1] ERROR:", text);
+    console.error(`[GLPI v1] ERROR ${method} ${path}:`, text);
     throw new Error(`[GLPI v1 ${method}] ${path} → HTTP ${res.status}\n${text}`);
   }
 
   if (!text) return undefined as T;
   return JSON.parse(text) as T;
 }
-
-export const glpiGetV1    = <T>(path: string)               => glpiFetchV1<T>("GET",    path);
-export const glpiPostV1   = <T>(path: string, body: unknown) => glpiFetchV1<T>("POST",   path, body);
-export const glpiPutV1    = <T>(path: string, body: unknown) => glpiFetchV1<T>("PUT",    path, body);
-export const glpiPatchV1  = <T>(path: string, body: unknown) => glpiFetchV1<T>("PATCH",  path, body);
-export const glpiDeleteV1 = <T>(path: string)               => glpiFetchV1<T>("DELETE", path);
+export const glpiGetV1 = <T>(path: string) => glpiFetchV1<T>("GET", path);
+export const glpiPostV1 = <T>(path: string, body: unknown) => glpiFetchV1<T>("POST", path, body);
+export const glpiPutV1 = <T>(path: string, body: unknown) => glpiFetchV1<T>("PUT", path, body);
+export const glpiPatchV1 = <T>(path: string, body: unknown) => glpiFetchV1<T>("PATCH", path, body);
+export const glpiDeleteV1 = <T>(path: string) => glpiFetchV1<T>("DELETE", path);
