@@ -6,7 +6,7 @@ import type { GlpiAsset } from "../../../types/elements/items.types";
 import { TICKET_STATUS, type Parameter } from "../../../types/parameter/parameter";
 import { useParameter } from "../../parameter/useParameter";
 
-const TicketServiceFront = {
+export const TicketServiceFront = {
   create: (body: CreateTicketRequest) =>
     glpiPost<{ id: number }>(
       "Assistance/Ticket",
@@ -16,6 +16,7 @@ const TicketServiceFront = {
     glpiGet<CreateTicketRequest>("Assistance/Ticket"),
   updateStatus: (ticketId: number, statusId: number) =>
     glpiPut<{ id: number }>(`Assistance/Ticket/${ticketId}`, {
+      date_mod: new Date().toISOString(),
       status: {
         id: statusId
       }

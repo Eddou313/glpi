@@ -1,67 +1,67 @@
-{
-  "name": "string",
-  "content": "string",
-  "user_recipient": {
-    "id": 0
-  },
-  "user_editor": {
-    "id": 0
-  },
-  "is_deleted": true,
-  "category": {
-    "id": 0
-  },
-  "location": {
-    "id": 0
-  },
-  "urgency": 1,
-  "impact": 1,
-  "priority": 1,
-  "resolution_date": "2026-06-09T00:50:05.197Z",
-  "date_creation": "2026-06-09T00:50:05.197Z",
-  "date_mod": "2026-06-09T00:50:05.197Z",
-  "date": "2026-06-09T00:50:05.197Z",
-  "date_solve": "2026-06-09T00:50:05.197Z",
-  "date_close": "2026-06-09T00:50:05.197Z",
-  "type": 1,
-  "external_id": "string",
-  "request_type": {
-    "id": 0
-  },
-  "take_into_account_date": "2026-06-09T00:50:05.197Z",
-  "sla_ttr": {
-    "id": 0
-  },
-  "sla_tto": {
-    "id": 0
-  },
-  "ola_ttr": {
-    "id": 0
-  },
-  "ola_tto": {
-    "id": 0
-  },
-  "sla_level_ttr": {
-    "id": 0
-  },
-  "ola_level_ttr": {
-    "id": 0
-  },
-  "internal_resolution_date": "2026-06-09T00:50:05.197Z",
-  "internal_take_into_account_date": "2026-06-09T00:50:05.197Z",
-  "global_validation": 1,
-  "status": {},
-  "entity": {
-    "completename": "string"
-  },
-  "team": [
-    {
-      "name": "string",
-      "type": "string",
-      "role": "string"
-    }
-  ],
-  "costs": [
-    {}
-  ]
-}
+  {
+    "name": "string",
+    "content": "string",
+    "user_recipient": {
+      "id": 0
+    },
+    "user_editor": {
+      "id": 0
+    },
+    "is_deleted": true,
+    "category": {
+      "id": 0
+    },
+    "location": {
+      "id": 0
+    },
+    "urgency": 1,
+    "impact": 1,
+    "priority": 1,
+    "resolution_date": "2026-06-10T08:56:49.541Z",
+    "date_creation": "2026-06-10T08:56:49.541Z",
+    "date_mod": "2026-06-10T08:56:49.541Z",
+    "date": "2026-06-10T08:56:49.541Z",
+    "date_solve": "2026-06-10T08:56:49.541Z",
+    "date_close": "2026-06-10T08:56:49.541Z",
+    "type": 1,
+    "external_id": "string",
+    "request_type": {
+      "id": 0
+    },
+    "take_into_account_date": "2026-06-10T08:56:49.541Z",
+    "sla_ttr": {
+      "id": 0
+    },
+    "sla_tto": {
+      "id": 0
+    },
+    "ola_ttr": {
+      "id": 0
+    },
+    "ola_tto": {
+      "id": 0
+    },
+    "sla_level_ttr": {
+      "id": 0
+    },
+    "ola_level_ttr": {
+      "id": 0
+    },
+    "internal_resolution_date": "2026-06-10T08:56:49.541Z",
+    "internal_take_into_account_date": "2026-06-10T08:56:49.541Z",
+    "global_validation": 1,
+    "status": {},
+    "entity": {
+      "completename": "string"
+    },
+    "team": [
+      {
+        "name": "string",
+        "type": "string",
+        "role": "string"
+      }
+    ],
+    "costs": [
+      {}
+    ]
+  }
