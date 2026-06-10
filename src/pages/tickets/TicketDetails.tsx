@@ -1,8 +1,6 @@
 import { X } from "lucide-react";
 import type { GLPITicketDetail } from "../../types/tickets/tickets.types";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────
-
 const URGENCY_LABELS: Record<number, string> = {
   1: "Très basse", 2: "Basse", 3: "Moyenne",
   4: "Haute", 5: "Très haute", 6: "Majeure",
@@ -28,8 +26,6 @@ function Row({ label, value }: { label: string; value?: string | null }) {
     </div>
   );
 }
-
-// ─── Composant ────────────────────────────────────────────────────────────
 
 export function TicketDetails({
   ticket,

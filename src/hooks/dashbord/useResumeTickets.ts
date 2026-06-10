@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { glpiGet } from '../../api/db_glpi';
 import {TICKET_STATUS_LABELS,TICKET_TYPE_LABELS,TICKET_PRIORITY_LABELS,type GlpiTicket,type TicketSummary,} from '../../types/dashbord/dashbord.type';
 
-// Utilitaire : regroupe un tableau par une clé et compte
 function groupAndCount<T>(
   items: T[],
   getKey: (item: T) => unknown,   // ← était : number
@@ -36,7 +35,6 @@ export function useTicketSummary() {
     setError(null);
 
     try {
-      // On récupère tous les tickets (champs minimaux pour la perf)
       const tickets = await glpiGet<GlpiTicket[]>(
         'Assistance/Ticket?range=0-9999&fields=id,status,type,priority'
       );

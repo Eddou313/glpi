@@ -2,13 +2,13 @@
 export type GlpiCountResponse = {
   count: number;
 };
-// Un élément physique (ordinateur, imprimante, etc.)
+
 export type GlpiAsset = {
   id: number;
   name: string;
   itemtype: string;
 };
-// Un ticket GLPI
+
 export type GlpiTicket = {
   id: number;
   name: string;
@@ -19,7 +19,7 @@ export type GlpiTicket = {
 
 export const TICKET_STATUS_LABELS: Record<number, string> = {
   1: 'Nouveau',
-  2: 'En cours',
+  2: 'En cours (distribuer',
   3: 'En cours (planifié)',
   4: 'En attente',
   5: 'Résolu',
@@ -40,20 +40,6 @@ export const TICKET_PRIORITY_LABELS: Record<number, string> = {
   6: 'Majeure',
 };
 
-// Types d'éléments à récupérer depuis GLPI
-export const ASSET_TYPES = [
-  { key: 'Computer',        label: 'Ordinateurs' },
-  { key: 'Monitor',         label: 'Moniteurs' },
-  { key: 'NetworkEquipment',label: 'Équipements réseau' },
-  { key: 'Peripheral',      label: 'Périphériques' },
-  { key: 'Phone',           label: 'Téléphones' },
-  { key: 'Printer',         label: 'Imprimantes' },
-  { key: 'Software',        label: 'Logiciels' },
-] as const;
-
-export type AssetTypeKey = typeof ASSET_TYPES[number]['key'];
-
-// Résultat structuré pour l'affichage
 export type AssetSummary = {
   total: number;
   byType: { label: string; count: number }[];

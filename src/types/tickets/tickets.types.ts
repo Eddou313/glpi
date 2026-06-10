@@ -16,6 +16,7 @@ export interface GLPITicketListe {
     id: number;
     name: string;
   };
+  type : number;
 }
 
 export type GLPITicketDetail = {

@@ -3,6 +3,7 @@ import { useTickets } from "../../hooks/tickets/useTickets";
 import { TicketDetails } from "./TicketDetails";
 import type { GLPITicketDetail } from "../../types/tickets/tickets.types";
 import "./tickets.css";
+import { TICKET_TYPE_LABELS } from "../../types/dashbord/dashbord.type";
 
 const STATUS_LABELS: Record<number, string> = {
   1: "Nouveau", 2: "En cours", 3: "En cours (planifié)",
@@ -60,6 +61,8 @@ export function TicketsPage() {
             <tr>
               <th>ID</th>
               <th>Titre</th>
+              <th>Description</th>
+              <th>Type</th>
               <th>Statut</th>
               <th>Priorité</th>
               <th>Date</th>
@@ -71,6 +74,8 @@ export function TicketsPage() {
               <tr key={t.id}>
                 <td className="tickets-table__id">#{t.id}</td>
                 <td className="tickets-table__name">{t.name}</td>
+                <td className="tickets-table__name">{t.content}</td>
+                <td className="tickets-table__name">{TICKET_TYPE_LABELS[t.type]}</td>
                 <td>
                   {typeof t.status === 'object'
                     ? <Badge label={(t.status as any).name ?? "—"} cls={STATUS_CLASS[(t.status as any).id] ?? "badge--gray"} />

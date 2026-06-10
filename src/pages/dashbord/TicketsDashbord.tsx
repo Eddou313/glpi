@@ -24,25 +24,16 @@ const PRIORITY_COLORS: Record<string, string> = {
   'Majeure':    '#7f1d1d',
 };
 
-function ProgressBar({ percent, color }: { percent: number; color: string }) {
-  return (
-    <div className="progress-track">
-      <div
-        className="progress-fill"
-        style={{ width: `${percent}%`, backgroundColor: color }}
-      />
-    </div>
-  );
-}
-
-function TicketRow({label,count,total,colorMap,}: {
+function TicketRow({ label, count, total, colorMap }: {
   label:    string;
   count:    number;
   total:    number;
   colorMap: Record<string, string>;
 }) {
-  const percent = total > 0 ? Math.round((count / total) * 100) : 0;
-  const color   = colorMap[label] ?? '#0ea5e9';
+  const safeCount = Number.isFinite(count) ? count : 0;
+  const safeTotal = Number.isFinite(total) && total > 0 ? total : 0;
+  const percent   = safeTotal > 0 ? Math.round((safeCount / safeTotal) * 100) : 0;
+  const color     = colorMap[label] ?? '#0ea5e9';
 
   return (
     <div className="detail-row">
@@ -53,14 +44,13 @@ function TicketRow({label,count,total,colorMap,}: {
         />
         {label}
       </span>
-      <ProgressBar percent={percent} color={color} />
-      <span className="detail-row__count">{count}</span>
+      <span className="detail-row__count">{safeCount}</span>
       <span className="detail-row__percent">{percent}%</span>
     </div>
   );
 }
 
-function TicketGroup({title,rows,total,colorMap,}: {
+function TicketGroup({ title, rows, total, colorMap }: {
   title:    string;
   rows:     { label: string; count: number }[];
   total:    number;
@@ -72,9 +62,8 @@ function TicketGroup({title,rows,total,colorMap,}: {
       <div className="detail-list">
         <div className="detail-list__header">
           <span>Catégorie</span>
-          <span>Répartition</span>
-          <span>Nb</span>
-          <span>%</span>
+          <span style={{ textAlign: 'right', paddingRight: '4px' }}>Nb</span>
+          <span style={{ textAlign: 'right', paddingRight: '4px' }}>%</span>
         </div>
         {rows.map(row => (
           <TicketRow
@@ -93,13 +82,13 @@ function TicketGroup({title,rows,total,colorMap,}: {
 function TicketContent({ summary }: { summary: TicketSummary }) {
   return (
     <>
-      {/* Total général */}
+      {/* Banner de total spécifique aux tickets */}
       <div className="total-banner total-banner--ticket">
         <span className="total-banner__label">Total tickets</span>
         <span className="total-banner__value">{summary.total}</span>
       </div>
 
-      {/* Détail par type (Incident / Demande) */}
+      {/* Répartition par type */}
       <TicketGroup
         title="Par type"
         rows={summary.byType}
@@ -107,7 +96,7 @@ function TicketContent({ summary }: { summary: TicketSummary }) {
         colorMap={TYPE_COLORS}
       />
 
-      {/* Détail par statut */}
+      {/* Répartition par statut */}
       <TicketGroup
         title="Par statut"
         rows={summary.byStatus}
@@ -115,7 +104,7 @@ function TicketContent({ summary }: { summary: TicketSummary }) {
         colorMap={STATUS_COLORS}
       />
 
-      {/* Détail par priorité */}
+      {/* Répartition par priorité */}
       <TicketGroup
         title="Par priorité"
         rows={summary.byPriority}
@@ -126,18 +115,21 @@ function TicketContent({ summary }: { summary: TicketSummary }) {
   );
 }
 
-// ─── Export ───────────────────────────────────────────────────────────────
-
 export function TicketDashboard() {
   const { summary, loading, error, refresh } = useTicketSummary();
 
   if (loading) return <p className="state-msg">Chargement des tickets…</p>;
-  if (error)   return (
+  if (error) return (
     <div className="state-error">
       <p>{error}</p>
       <button onClick={refresh}>Réessayer</button>
     </div>
   );
+
+  if (summary && summary.total === 0) {
+    return <p className="state-msg">Aucun ticket trouvé dans GLPI.</p>;
+  }
+
   if (!summary) return null;
 
   return <TicketContent summary={summary} />;

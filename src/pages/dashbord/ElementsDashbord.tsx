@@ -1,15 +1,7 @@
 import { useAssetSummary } from '../../hooks/dashbord/useDashbord';
 import type { AssetSummary } from '../../types/dashbord/dashbord.type';
 
-function ProgressBar({ percent }: { percent: number }) {
-  return (
-    <div className="progress-track">
-      <div className="progress-fill" style={{ width: `${percent}%` }} />
-    </div>
-  );
-}
-
-function AssetRow({label,count,total,}: {
+function AssetRow({ label, count, total }: {
   label: string;
   count: number;
   total: number;
@@ -21,12 +13,12 @@ function AssetRow({label,count,total,}: {
   return (
     <div className="detail-row">
       <span className="detail-row__label">{label}</span>
-      <ProgressBar percent={percent} />
-      <span className="detail-row__count">{count}</span>
+      <span className="detail-row__count">{safeCount}</span>
       <span className="detail-row__percent">{percent}%</span>
     </div>
   );
 }
+
 function AssetContent({ summary }: { summary: AssetSummary }) {
   return (
     <>
@@ -40,9 +32,8 @@ function AssetContent({ summary }: { summary: AssetSummary }) {
       <div className="detail-list">
         <div className="detail-list__header">
           <span>Type</span>
-          <span>Répartition</span>
-          <span>Nb</span>
-          <span>%</span>
+          <span style={{ textAlign: 'right' }}>Nb</span>
+          <span style={{ textAlign: 'right' }}>%</span>
         </div>
         {summary.byType.map(row => (
           <AssetRow
@@ -56,11 +47,12 @@ function AssetContent({ summary }: { summary: AssetSummary }) {
     </>
   );
 }
+
 export function ElementDashboard() {
   const { summary, loading, error, refresh } = useAssetSummary();
 
   if (loading) return <p className="state-msg">Chargement des éléments…</p>;
-  if (error)   return (
+  if (error) return (
     <div className="state-error">
       <p>{error}</p>
       <button onClick={refresh}>Réessayer</button>
