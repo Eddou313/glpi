@@ -1,0 +1,414 @@
+import React, { useState, useEffect } from 'react';
+import { useTicketKanban, useCreateTicket, TicketServiceFront } from "../../../hooks/FrontOffice/tickets/useCreateTickets";
+import { useItems } from "../../../hooks/FrontOffice/elements/useItems";
+import { useCategory } from "../../../hooks/category/useCategory";
+import type { GlpiAsset } from "../../../types/elements/items.types";
+import './TicketKanban.css';
+
+export function TicketKanban() {
+    const { allTickets, statusUtiliser, Parameters, loading, error } = useTicketKanban();
+    const { create: createTicket, loading: creationLoading, error: creationError } = useCreateTicket();
+    const { items } = useItems();
+    const { categories } = useCategory();
+
+    const [localTickets, setLocalTickets] = useState<any[]>([]);
+    
+    // 👇 ÉTAT POUR LA SÉLECTION MULTIPLE DES TICKETS
+    const [selectedTicketIds, setSelectedTicketIds] = useState<number[]>([]);
+
+    // États modals existants
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [currentColumnStatusId, setCurrentColumnStatusId] = useState<number | null>(null);
+    const [title, setTitle] = useState("");
+    const [content, setContent] = useState("");
+    const [urgency, setUrgency] = useState<number>(3);
+    const [impact, setImpact] = useState<number>(3);
+    const [categoryId, setCategoryId] = useState<string>("");
+    const [selectedItems, setSelectedItems] = useState<GlpiAsset[]>([]);
+    const [itemSearch, setItemSearch] = useState("");
+
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [selectedTicket, setSelectedTicket] = useState<any>(null);
+    const [linkedItems, setLinkedItems] = useState<any[]>([]);
+    const [loadingItems, setLoadingItems] = useState(false);
+
+    useEffect(() => {
+        if (allTickets && Array.isArray(allTickets)) {
+            setLocalTickets(allTickets);
+        } else if (allTickets && !Array.isArray(allTickets)) {
+            setLocalTickets([allTickets]);
+        }
+    }, [allTickets]);
+
+    if (loading) return <div className="kanban-loading">Chargement du Kanban...</div>;
+    if (error) return <div className="kanban-error" style={{ color: "red" }}>Erreur : {error}</div>;
+    if (!Parameters || !statusUtiliser) return <div>Aucun paramètre ou statut trouvé.</div>;
+
+    const filteredItems = (items || []).filter((item) => {
+        const q = itemSearch.toLowerCase();
+        return (
+            item.id.toString().includes(q) ||
+            (item.name ?? "").toLowerCase().includes(q) ||
+            (item.itemType ?? "").toLowerCase().includes(q)
+        );
+    });
+
+    const paramsArray = Array.isArray(Parameters) ? Parameters : (Parameters ? [Parameters] : [] as any[]);
+    const columns = paramsArray.map((param: any) => {
+        const statusMatch = statusUtiliser.find(([_, id]) => id === param.technical_name);
+        return {
+            id: param.technical_name,
+            title: statusMatch ? statusMatch[0] : `Statut ${param.technical_name}`,
+            bgColor: param.bg_color || '#ccc'
+        };
+    });
+
+    // ── GESTION DES CASES À COCHER (CHECKBOX) ──
+    const handleToggleSelectTicket = (ticketId: number) => {
+        setSelectedTicketIds(prev =>
+            prev.includes(ticketId)
+                ? prev.filter(id => id !== ticketId)
+                : [...prev, ticketId]
+        );
+    };
+
+    // ── GESTION MULTI-DRAG & DROP ──
+    const handleDragStart = (e: React.DragEvent<HTMLDivElement>, draggedTicketId: number) => {
+        // Si le ticket initiateur du drag n'est pas coché, on l'ajoute automatiquement ou on prend uniquement la sélection
+        let targets = [...selectedTicketIds];
+        if (!targets.includes(draggedTicketId)) {
+            targets = [draggedTicketId];
+        }
+        
+        // Stockage de la liste de tous les IDs sous forme de chaîne JSON
+        e.dataTransfer.setData('text/plain', JSON.stringify(targets));
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+    };
+
+    const handleDrop = async (e: React.DragEvent<HTMLDivElement>, targetStatusId: number) => {
+        e.preventDefault();
+        
+        try {
+            const rawData = e.dataTransfer.getData('text/plain');
+            const ticketIdsToUpdate: number[] = JSON.parse(rawData);
+
+            if (!Array.isArray(ticketIdsToUpdate) || ticketIdsToUpdate.length === 0) return;
+
+            // Filtrer pour ne garder que ceux qui changent réellement de statut
+            const validIds = ticketIdsToUpdate.filter(id => {
+                const ticket = localTickets.find(t => t.id === id);
+                return ticket && ticket.status?.id !== targetStatusId;
+            });
+
+            if (validIds.length === 0) return;
+
+            const previousTickets = [...localTickets];
+            const todayStr = new Date().toISOString();
+
+            // 1. Mise à jour visuelle optimiste pour TOUS les tickets sélectionnés
+            setLocalTickets(prevTickets =>
+                prevTickets.map(t => {
+                    if (validIds.includes(t.id)) {
+                        const statusMatch = statusUtiliser.find(([_, id]) => id === targetStatusId);
+                        return { 
+                            ...t, 
+                            status: { id: targetStatusId, name: statusMatch ? statusMatch[0] : t.status?.name },
+                            date_mod: todayStr
+                        };
+                    }
+                    return t;
+                })
+            );
+
+            // Désélectionner après le déplacement
+            setSelectedTicketIds([]);
+
+            // 2. Envoi des requêtes PUT en parallèle via Promise.all vers l'API GLPI V1
+            try {
+                await Promise.all(
+                    validIds.map(ticketId => TicketServiceFront.updateStatus(ticketId, targetStatusId))
+                );
+            } catch (err: any) {
+                alert("Erreur lors de la mise à jour groupée : " + err.message);
+                setLocalTickets(previousTickets); // Rollback global si échec
+            }
+
+        } catch (error) {
+            console.error("Erreur lors du décodage des données drag :", error);
+        }
+    };
+
+    // Ouvrir les détails (uniquement au clic sur le corps, pas sur la checkbox)
+    const handleOpenDetailModal = async (ticket: any, e: React.MouseEvent) => {
+        // Empêche l'ouverture si on clique sur la checkbox
+        if ((e.target as HTMLElement).tagName === 'INPUT') return;
+
+        setSelectedTicket(ticket);
+        setIsDetailModalOpen(true);
+        setLinkedItems([]);
+        setLoadingItems(true);
+
+        try {
+            const relations = await TicketServiceFront.getLinkedItems(ticket.id);
+            if (Array.isArray(relations)) {
+                setLinkedItems(relations);
+            }
+        } catch (err) {
+            console.error("Erreur relations:", err);
+        } finally {
+            setLoadingItems(false);
+        }
+    };
+
+    // Fonctions d'encombrement / création inchangées
+    const handleOpenCreateModal = (statusId: number) => {
+        setCurrentColumnStatusId(statusId);
+        setIsCreateModalOpen(true);
+    };
+
+    const handleSaveTicket = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!title.trim() || !content.trim() || currentColumnStatusId === null) return;
+
+        const todayStr = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+        const body: any = {
+            name: title.trim(),
+            content: content.trim(),
+            urgency,
+            impact,
+            priority: Math.max(urgency, impact),
+            type: 1,
+            status: currentColumnStatusId,
+            date_creation: todayStr,
+            date_mod: todayStr,
+            date: todayStr
+        };
+
+        if (categoryId) body.itilcategories_id = Number(categoryId);
+
+        const result = await createTicket(body, selectedItems);
+
+        if (result) {
+            const newId = Array.isArray(result) ? result[0]?.id : result?.id;
+            if (newId) {
+                const statusMatch = statusUtiliser.find(([_, id]) => id === currentColumnStatusId);
+                const categoryMatch = categories.find(c => c.id === Number(categoryId));
+
+                const newTicketLocal = {
+                    id: newId,
+                    ...body,
+                    status: { id: currentColumnStatusId, name: statusMatch ? statusMatch[0] : 'New' },
+                    category: categoryMatch ? { id: categoryMatch.id, name: categoryMatch.name } : null,
+                };
+                setLocalTickets(prev => [...prev, newTicketLocal]);
+                closeCreateModal();
+            }
+        }
+    };
+
+    const closeCreateModal = () => {
+        setIsCreateModalOpen(false);
+        setCurrentColumnStatusId(null);
+        setTitle(""); setContent(""); setUrgency(3); setImpact(3); setCategoryId(""); setSelectedItems([]); setItemSearch("");
+    };
+
+    const formatDate = (dateString: string) => {
+        if (!dateString) return '';
+        return new Date(dateString).toLocaleDateString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    };
+
+    return (
+        <div className="kanban-container">
+            <div className="kanban-header">
+                <h1>Ticket Kanban</h1>
+                <span className="kanban-subtitle">Cochez des cases pour déplacer plusieurs tickets à la fois</span>
+            </div>
+
+            <div className="kanban-board">
+                {columns.map((column) => {
+                    const columnTickets = localTickets.filter(t => t.status?.id === column.id);
+
+                    return (
+                        <div key={column.id} className="kanban-column" onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, column.id)} style={{ backgroundColor: column.bgColor }} >
+                            <div className="kanban-column__header">
+                                <h2>{column.title}</h2>
+                                <span className="kanban-column__count">{columnTickets.length}</span>
+                            </div>
+
+                            <div className="kanban-column__list">
+                                {columnTickets.map((ticket) => {
+                                    const isChecked = selectedTicketIds.includes(ticket.id);
+                                    return (
+                                        <div 
+                                            key={ticket.id} 
+                                            className={`kanban-card ${isChecked ? 'kanban-card--selected' : ''}`}
+                                            draggable 
+                                            onDragStart={(e) => handleDragStart(e, ticket.id)}
+                                            onClick={(e) => handleOpenDetailModal(ticket, e)}
+                                        >
+                                            <div className="kanban-card__header">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    {/* 👇 LA CHECKBOX DE SÉLECTION MULTIPLE */}
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={isChecked}
+                                                        onChange={() => handleToggleSelectTicket(ticket.id)}
+                                                        style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+                                                    />
+                                                    <span className="kanban-card__id">#{ticket.id}</span>
+                                                </div>
+                                                <span className={`kanban-card__badge urgency-${ticket.urgency}`}>
+                                                    Urgence {ticket.urgency}
+                                                </span>
+                                            </div>
+                                            <h3 className="kanban-card__title">{ticket.name || 'Sans titre'}</h3>
+                                        </div>
+                                    );
+                                })}
+
+                                <div className="kanban-column__add-btn" onClick={() => handleOpenCreateModal(column.id)}>
+                                    <span>+ Ajouter 1 ticket</span>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* 1. MODAL CRÉATION */}
+            {isCreateModalOpen && (
+                <div className="modal-overlay">
+                    <div className="modal-box creation-modal">
+                        <div className="modal-header">
+                            <h3>Créer un ticket incident ({statusUtiliser.find(([_, id]) => id === currentColumnStatusId)?.[0]})</h3>
+                        </div>
+                        {creationError && <div style={{ color: "red", marginBottom: 10 }}>{creationError}</div>}
+                        
+                        <form onSubmit={handleSaveTicket} className="ticket-form">
+                            <div className="ticket-form__field">
+                                <label>Titre du problème *</label>
+                                <input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: VPN ne fonctionne pas..." />
+                            </div>
+
+                            <div className="ticket-form__field">
+                                <label>Catégorie</label>
+                                <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+                                    <option value="">-- Choisir une catégorie --</option>
+                                    {(categories || []).map((cat) => (
+                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="ticket-form__row" style={{ display: 'flex', gap: '1rem' }}>
+                                <div className="ticket-form__field" style={{ flex: 1 }}>
+                                    <label>Urgence</label>
+                                    <select value={urgency} onChange={(e) => setUrgency(Number(e.target.value))}>
+                                        <option value={1}>Très basse</option>
+                                        <option value={2}>Basse</option>
+                                        <option value={3}>Moyenne</option>
+                                        <option value={4}>Haute</option>
+                                        <option value={5}>Très haute</option>
+                                    </select>
+                                </div>
+                                <div className="ticket-form__field" style={{ flex: 1 }}>
+                                    <label>Impact</label>
+                                    <select value={impact} onChange={(e) => setImpact(Number(e.target.value))}>
+                                        <option value={1}>Très bas</option>
+                                        <option value={2}>Bas</option>
+                                        <option value={3}>Moyen</option>
+                                        <option value={4}>Haut</option>
+                                        <option value={5}>Très haut</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="ticket-form__field">
+                                <label>Description *</label>
+                                <textarea rows={4} required value={content} onChange={(e) => setContent(e.target.value)} placeholder="Détails de l'incident..." />
+                            </div>
+
+                            <div className="ticket-items-box">
+                                <div className="ticket-items-box__header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <label>Éléments associés</label>
+                                    <input className="ticket-items-box__search" placeholder="Filtrer un équipement..." value={itemSearch} onChange={(e) => setItemSearch(e.target.value)} />
+                                </div>
+                                <div className="ticket-items-box__list" style={{ maxHeight: '120px', overflowY: 'auto', border: '1px solid #ddd', padding: '5px', borderRadius: '6px', margin: '5px 0' }}>
+                                    {filteredItems.map((item) => (
+                                        <label key={`${item.itemType}-${item.id}`} className="ticket-items-box__item" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
+                                            <input type="checkbox" checked={selectedItems.some(x => x.id === item.id)} onChange={(e) => {
+                                                if (e.target.checked) setSelectedItems([...selectedItems, item]);
+                                                else setSelectedItems(selectedItems.filter((x) => x.id !== item.id));
+                                            }} />
+                                            <span style={{ fontSize: '0.85rem' }}>{item.id} - {item.name ?? "Sans nom"} ({item.itemType})</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="modal-actions">
+                                <button type="button" className="btn-secondary" onClick={closeCreateModal} disabled={creationLoading}>Annuler</button>
+                                <button type="submit" className="ticket-form__submit" disabled={creationLoading}>Créer ticket</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* 2. MODAL DÉTAILS */}
+            {isDetailModalOpen && selectedTicket && (
+                <div className="modal-overlay" onClick={() => { setIsDetailModalOpen(false); setSelectedTicket(null); }}>
+                    <div className="modal-box detail-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>Détails du Ticket #{selectedTicket.id}</h3>
+                        </div>
+                        <div className="ticket-detail-body" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div><strong>Titre :</strong> {selectedTicket.name || 'Sans titre'}</div>
+                            <div><strong>Description :</strong> {selectedTicket.content || 'Aucune description'}</div>
+                            <div><strong>Statut actuel :</strong> <span className="kanban-column__count" style={{ borderRadius: '4px' }}>{selectedTicket.status?.name}</span></div>
+                            
+                            <div style={{ display: 'flex', gap: '20px' }}>
+                                <div><strong>Urgence :</strong> {selectedTicket.urgency}/5</div>
+                                <div><strong>Impact :</strong> {selectedTicket.impact}/5</div>
+                            </div>
+                            <div><strong>Catégorie :</strong> {selectedTicket.category?.name || 'Aucune'}</div>
+                            
+                            <hr style={{ border: '0.5px solid #eee', margin: '8px 0' }} />
+                            
+                            <div>
+                                <strong>🔗 Éléments associés :</strong>
+                                {loadingItems ? (
+                                    <div style={{ fontSize: '0.85rem', color: '#666', fontStyle: 'italic', marginTop: '4px' }}>Chargement...</div>
+                                ) : linkedItems.length === 0 ? (
+                                    <div style={{ fontSize: '0.85rem', color: '#999', fontStyle: 'italic', marginTop: '4px' }}>Aucun équipement associé.</div>
+                                ) : (
+                                    <ul style={{ margin: '6px 0 0 0', paddingLeft: '20px', fontSize: '0.9rem', color: '#334155' }}>
+                                        {linkedItems.map((item: any) => (
+                                            <li key={item.id} style={{ marginBottom: '4px' }}>
+                                                <span style={{ fontWeight: 600 }}>{item.itemtype}</span> (ID: {item.items_id})
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                            <hr style={{ border: '0.5px solid #eee', margin: '8px 0' }} />
+                            <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                                <div>📅 Créé le : {formatDate(selectedTicket.date_creation)}</div>
+                                <div>🔄 Modifié le : {formatDate(selectedTicket.date_mod)}</div>
+                            </div>
+                        </div>
+                        <div className="modal-actions">
+                            <button type="button" className="btn-secondary" onClick={() => { setIsDetailModalOpen(false); setSelectedTicket(null); }}>Fermer</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+export default TicketKanban;
