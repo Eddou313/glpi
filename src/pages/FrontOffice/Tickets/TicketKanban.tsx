@@ -206,8 +206,7 @@ export function TicketKanban() {
     return (
         <div className="kanban-container">
             <div className="kanban-header">
-                <h1>Ticket Kanban</h1>
-                <span className="kanban-subtitle">Glissez-déposez les tickets pour changer leur statut</span>
+                <h1>Liste Ticket de forme en Kanban</h1>
             </div>
 
             <div className="kanban-board">
