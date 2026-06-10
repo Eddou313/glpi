@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { CreateTicketRequest } from "../../../types/tickets/tickets.types";
 import { glpiGet, glpiPost } from "../../../api/db_client";
-import { glpiPostV1, glpiPut, glpiPutV1 } from "../../../api/db_glpi";
+import { glpiGetV1, glpiPostV1, glpiPut, glpiPutV1 } from "../../../api/db_glpi";
 import type { GlpiAsset } from "../../../types/elements/items.types";
 import { TICKET_STATUS, type Parameter } from "../../../types/parameter/parameter";
 import { useParameter } from "../../parameter/useParameter";
@@ -15,19 +15,22 @@ export const TicketServiceFront = {
   getAll: () =>
     glpiGet<CreateTicketRequest>("Assistance/Ticket"),
   updateStatus: (ticketId: number, statusId: number) => {
-    const todayStr = new Date().toISOString().slice(0, 19).replace('T', ' '); // Format GLPI attendu : YYYY-MM-DD HH:MM:SS
-    
+    const todayStr = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
     return glpiPutV1<any>("Ticket", {
       input: [
         {
           id: ticketId,
-          status: statusId,         // En V1, c'est directement l'ID numérique
-          date_mod: todayStr        // Date de modification du jour
+          status: statusId,
+          date_mod: todayStr
         }
       ]
     });
   },
+  getLinkedItems: (ticketId: number) =>
+    glpiGetV1<any[]>(`Ticket/${ticketId}/Item_Ticket`),
 };
+
 
 export function useTicketKanban() {
   const [allTickets, setAllTickets] = useState<CreateTicketRequest | null>(null);

@@ -14,7 +14,7 @@ export function TicketKanban() {
 
     // États locaux pour le Kanban
     const [localTickets, setLocalTickets] = useState<any[]>([]);
-    
+
     // États pour la modal de création de ticket
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [currentColumnStatusId, setCurrentColumnStatusId] = useState<number | null>(null);
@@ -29,6 +29,9 @@ export function TicketKanban() {
     // États pour la modal de détails d'un ticket
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState<any>(null);
+
+    const [linkedItems, setLinkedItems] = useState<any[]>([]); // 👇 Nouvel état pour les éléments rattachés
+    const [loadingItems, setLoadingItems] = useState(false);
 
     // Initialisation locale des tickets
     useEffect(() => {
@@ -88,8 +91,8 @@ export function TicketKanban() {
             prevTickets.map(t => {
                 if (t.id === ticketId) {
                     const statusMatch = statusUtiliser.find(([_, id]) => id === targetStatusId);
-                    return { 
-                        ...t, 
+                    return {
+                        ...t,
                         status: { id: targetStatusId, name: statusMatch ? statusMatch[0] : t.status?.name },
                         date_mod: todayStr
                     };
@@ -99,7 +102,8 @@ export function TicketKanban() {
         );
 
         try {
-            await TicketServiceFront.updateStatus(ticketId, targetStatusId);
+            const update = await TicketServiceFront.updateStatus(ticketId, targetStatusId);
+            alert("Tickets Modifier avec succes ");
         } catch (err: any) {
             alert("Erreur lors de la mise à jour du statut : " + err.message);
             setLocalTickets(previousTickets);
@@ -128,7 +132,7 @@ export function TicketKanban() {
             impact,
             priority: Math.max(urgency, impact),
             type: 1,
-            status: { id: currentColumnStatusId, name: statusMatch ? statusMatch[0] : 'New' }, 
+            status: { id: currentColumnStatusId, name: statusMatch ? statusMatch[0] : 'New' },
             date_creation: todayStr,
             date_mod: todayStr,
             date: todayStr,
@@ -172,9 +176,23 @@ export function TicketKanban() {
     };
 
     // ── MODAL DE DÉTAILS ──
-    const handleOpenDetailModal = (ticket: any) => {
+    const handleOpenDetailModal = async (ticket: any) => {
         setSelectedTicket(ticket);
         setIsDetailModalOpen(true);
+        setLinkedItems([]); // Réinitialise la liste
+        setLoadingItems(true);
+        try {
+            // Récupération des liaisons Item_Ticket
+            const relations = await TicketServiceFront.getLinkedItems(ticket.id);
+
+            if (Array.isArray(relations)) {
+                setLinkedItems(relations);
+            }
+        } catch (err) {
+            console.error("Erreur lors de la récupération des éléments associés :", err);
+        } finally {
+            setLoadingItems(false);
+        }
     };
 
     const formatDate = (dateString: string) => {
@@ -205,10 +223,10 @@ export function TicketKanban() {
 
                             <div className="kanban-column__list">
                                 {columnTickets.map((ticket) => (
-                                    <div 
-                                        key={ticket.id} 
-                                        className="kanban-card" 
-                                        draggable 
+                                    <div
+                                        key={ticket.id}
+                                        className="kanban-card"
+                                        draggable
                                         onDragStart={(e) => handleDragStart(e, ticket.id)}
                                         onClick={() => handleOpenDetailModal(ticket)} /* Ouvre le détail complet */
                                     >
@@ -222,10 +240,11 @@ export function TicketKanban() {
                                     </div>
                                 ))}
 
-                                {/* Bouton disponible sur TOUTES les colonnes */}
-                                <div className="kanban-column__add-btn" onClick={() => handleOpenCreateModal(column.id)}>
-                                    <span>+ Ajouter 1 ticket</span>
-                                </div>
+                                {column.id === 1 && (
+                                    <div className="kanban-column__add-btn" onClick={() => handleOpenCreateModal(column.id)}>
+                                        <span>+ Ajouter 1 ticket</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     );
@@ -240,7 +259,7 @@ export function TicketKanban() {
                             <h3>Créer un ticket incident ({statusUtiliser.find(([_, id]) => id === currentColumnStatusId)?.[0]})</h3>
                         </div>
                         {creationError && <div style={{ color: "red", marginBottom: 10 }}>{creationError}</div>}
-                        
+
                         <form onSubmit={handleSaveTicket} className="ticket-form">
                             <div className="ticket-form__field">
                                 <label>Titre du problème *</label>
@@ -332,11 +351,31 @@ export function TicketKanban() {
                                 <div><strong>Priorité :</strong> {selectedTicket.priority}/5</div>
                             </div>
                             <div><strong>Catégorie :</strong> {selectedTicket.category?.name || 'Aucune'}</div>
-                            <div><strong>Type de requête :</strong> {selectedTicket.request_type?.name || 'Helpdesk'}</div>
+                            <hr style={{ border: '0.5px solid #eee', margin: '8px 0' }} />
+                            <div>
+                                <strong>Éléments associés :</strong>
+                                {loadingItems ? (
+                                    <div style={{ fontSize: '0.85rem', color: '#666', fontStyle: 'italic', marginTop: '4px' }}>
+                                        Chargement des équipements...
+                                    </div>
+                                ) : linkedItems.length === 0 ? (
+                                    <div style={{ fontSize: '0.85rem', color: '#999', fontStyle: 'italic', marginTop: '4px' }}>
+                                        Aucun équipement associé à ce ticket.
+                                    </div>
+                                ) : (
+                                    <ul style={{ margin: '6px 0 0 0', paddingLeft: '20px', fontSize: '0.9rem', color: '#334155' }}>
+                                        {linkedItems.map((item: any) => (
+                                            <li key={item.id} style={{ marginBottom: '4px' }}>
+                                                <span style={{ fontWeight: 600 }}>{item.itemtype}</span> (ID: {item.items_id})
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
                             <hr style={{ border: '0.5px solid #eee', margin: '10px 0' }} />
                             <div style={{ fontSize: '0.8rem', color: '#666' }}>
-                                <div>📅 Créé le : {formatDate(selectedTicket.date_creation)}</div>
-                                <div>🔄 Modifié le : {formatDate(selectedTicket.date_mod)}</div>
+                                <div>Créé le : {formatDate(selectedTicket.date_creation)}</div>
+                                <div>Modifié le : {formatDate(selectedTicket.date_mod)}</div>
                             </div>
                         </div>
                         <div className="modal-actions">
