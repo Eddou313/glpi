@@ -128,7 +128,7 @@ export function TicketKanban() {
             impact,
             priority: Math.max(urgency, impact),
             type: 1,
-            status: { id: currentColumnStatusId, name: statusMatch ? statusMatch[0] : 'New' }, // Injecte le statut de la colonne actuelle
+            status: { id: currentColumnStatusId, name: statusMatch ? statusMatch[0] : 'New' }, 
             date_creation: todayStr,
             date_mod: todayStr,
             date: todayStr,
