@@ -7,6 +7,12 @@ export const getLastParameter = (req: Request, res: Response) => {
   res.json(status);
 };
 
+export const getAllParameter = (req: Request, res: Response) => {
+  const status = db.prepare('SELECT id, technical_name, default_name_fr, name_mg, bg_color FROM kanban_statuses').get();
+  if (!status) return res.status(404).json({ error: 'Kanban status not found' });
+  res.json(status);
+};
+
 export const getParameter = (req: Request, res: Response) => {
   const id = Number(req.params.id);
   const status = db.prepare('SELECT id, technical_name, default_name_fr, name_mg, bg_color FROM kanban_statuses WHERE id = ?').get(id);

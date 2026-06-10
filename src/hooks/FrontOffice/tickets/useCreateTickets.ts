@@ -1,16 +1,49 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { CreateTicketRequest } from "../../../types/tickets/tickets.types";
-import { glpiPost } from "../../../api/db_client";
+import { glpiGet, glpiPost } from "../../../api/db_client";
 import { glpiPostV1 } from "../../../api/db_glpi";
 import type { GlpiAsset } from "../../../types/elements/items.types";
+import { TICKET_STATUS, type Parameter } from "../../../types/parameter/parameter";
+import { useParameter } from "../../parameter/useParameter";
 
-const TicketService = {
+const TicketServiceFront = {
   create: (body: CreateTicketRequest) =>
     glpiPost<{ id: number }>(
       "Assistance/Ticket",
       body
     ),
+  getAll: () =>
+    glpiGet<CreateTicketRequest>("Assistance/Ticket"),
 };
+
+export async function useTicketKanban() {
+  const [allTickets, setAllTickets] = useState<CreateTicketRequest | null>(null);
+  const [statusUtiliser,setStatusUtiliser ] = useState<Object | null>(null);
+  const [Parameters,setParameters] = useState<Parameter | null>(null);
+  const {getAllParameter} = useParameter();
+
+  const loadTickets = async () =>
+  {
+    try {
+        const all = await TicketServiceFront.getAll() ;
+        const par = await getAllParameter;
+        setStatusUtiliser(Object.entries(TICKET_STATUS));
+        setAllTickets(all?all:null);
+        setParameters(par);
+    } catch (error : any) {
+      throw new  Error("Erreur :",error.message);
+    }
+  } 
+  useEffect(()=>{
+    loadTickets;
+  },[]);
+
+  return{
+    allTickets,
+    statusUtiliser,
+    Parameters
+  }
+}
 
 
 export async function linkItemsToTicket(
@@ -18,8 +51,7 @@ export async function linkItemsToTicket(
   items: GlpiAsset[]
 ): Promise<string[]> {
   const linked: string[] = [];
-  if(items.length === 0)
-  {
+  if (items.length === 0) {
     return linked;
   }
 
@@ -52,13 +84,12 @@ export function useCreateTicket() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function create(body: CreateTicketRequest,elements?: GlpiAsset[]) {
-    try 
-    {
+  async function create(body: CreateTicketRequest, elements?: GlpiAsset[]) {
+    try {
       setLoading(true);
       setError(null);
 
-      let result = await TicketService.create(body);
+      let result = await TicketServiceFront.create(body);
       await linkItemsToTicket(result.id, elements || []);
 
       return result;

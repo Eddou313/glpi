@@ -91,6 +91,7 @@ export type GLPITicketTeamMember = {
 };
 
 export type CreateTicketRequest = {
+  id?: number;
   name: string;
   content: string;
 
@@ -124,4 +125,8 @@ export type CreateTicketRequest = {
     id: number;
     itemtype: string;
   }[];
+  status?: {
+    id: number;
+    name: string;
+  };
 };

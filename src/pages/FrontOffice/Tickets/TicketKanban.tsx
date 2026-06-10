@@ -1,179 +1,189 @@
 import React, { useState } from 'react';
 import './TicketKanban.css';
-
-// 1. Initialisation des données statiques de départ
-const INITIAL_TICKETS = [
-  { id: 'TK-101', title: 'Panne imprimante 2ème étage', category: 'Matériel', urgency: 'Haute', date: '10/06/2026', status: 'todo', solution: '' },
-  { id: 'TK-104', title: 'Accès VPN bloqué pour les nouveaux arrivants', category: 'Réseau', urgency: 'Critique', date: '10/06/2026', status: 'todo', solution: '' },
-  { id: 'TK-102', title: 'Mise à jour suite bureautique', category: 'Logiciel', urgency: 'Moyenne', date: '09/06/2026', status: 'in-progress', solution: '' },
-  { id: 'TK-105', title: 'Demande de double écran', category: 'Matériel', urgency: 'Basse', date: '08/06/2026', status: 'in-progress', solution: '' },
-  { id: 'TK-103', title: 'Réinitialisation mot de passe Active Directory', category: 'Sécurité', urgency: 'Basse', date: '07/06/2026', status: 'done', solution: 'Mot de passe réinitialisé via console AD.' }
-];
-
-const COLUMNS = [
-  { id: 'todo', title: 'À faire' },
-  { id: 'in-progress', title: 'En cours' },
-  { id: 'done', title: 'Résolu' }
-];
+import { useTicketKanban } from '../../../hooks/FrontOffice/tickets/useCreateTickets';
 
 function TicketKanban() {
-  const [tickets, setTickets] = useState(INITIAL_TICKETS);
-  
-  // États pour la boîte de dialogue (Modal)
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [pendingTransition, setPendingTransition] = useState<{ ticketId: string; targetStatus: string } | null>(null); // Stocke { ticketId, targetStatus }
-  const [solutionText, setSolutionText] = useState('');
+    const [tickets, setTickets] = useState<any[]>([]);
+    const [statusUtiliser, setStatusUtiliser] = useState<[string, number][] | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [solutionText, setSolutionText] = useState('');
+    const [pendingDrop, setPendingDrop] = useState<{ ticketId: any; statusId: number; statusName: string } | null>(null);
 
-  // 2. Gestion du Drag & Drop HTML5 (Corrigé en pur JS)
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, ticketId: string) => {
-    e.dataTransfer.setData('text/plain', ticketId);
-  };
+    // Chargement initial des données
+    React.useEffect(() => {
+        let isMounted = true;
 
-  const handleDragOver = (e: { preventDefault: () => void; }) => {
-    e.preventDefault(); // Nécessaire pour autoriser le "drop"
-  };
+        useTicketKanban()
+            .then((data) => {
+                if (!isMounted) return;
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>, targetStatus: string) => {
-    e.preventDefault();
-    const ticketId = e.dataTransfer.getData('text/plain');
-    const ticket = tickets.find(t => t.id === ticketId);
+                const normalizedTickets = data?.allTickets
+                    ? (Array.isArray(data.allTickets) ? data.allTickets : [data.allTickets])
+                    : [];
 
-    if (!ticket || ticket.status === targetStatus) return;
+                const normalizedStatus = data?.statusUtiliser
+                    ? (Object.entries(data.statusUtiliser as Record<string, number>) as [string, number][])
+                    : [];
 
-    // RÈGLE : Si on déplace vers "Résolu" (done), on ouvre la boîte de dialogue
-    if (targetStatus === 'done') {
-      setPendingTransition({ ticketId, targetStatus });
-      setSolutionText(ticket.solution || ''); 
-      setIsModalOpen(true);
-    } else {
-      // Nettoyage automatique de la solution si le ticket retourne en arrière (optionnel mais propre)
-      updateTicketStatus(ticketId, targetStatus, { solution: '' });
-    }
-  };
+                setTickets(normalizedTickets);
+                setStatusUtiliser(normalizedStatus);
+            })
+            .catch(() => {
+                if (!isMounted) return;
+                setTickets([]);
+                setStatusUtiliser([]);
+            });
 
-  // Mise à jour du statut dans le state
-  const updateTicketStatus = (ticketId: string, targetStatus: any, additionalData = {}) => {
-    setTickets(prevTickets => 
-      prevTickets.map(t => 
-        t.id === ticketId 
-          ? { ...t, status: targetStatus, ...additionalData } 
-          : t
-      )
-    );
-  };
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
-  // Validation de la boîte de dialogue
-  const handleModalSubmit = (e: { preventDefault: () => void; }) => {
-    e.preventDefault();
-    if (!solutionText.trim()) return;
+    // 1. Début du Glisser (Drag)
+    const handleDragStart = (e: React.DragEvent, ticketId: any) => {
+        e.dataTransfer.setData('text/plain', ticketId.toString());
+    };
 
-    if (pendingTransition) {
-      updateTicketStatus(pendingTransition.ticketId, pendingTransition.targetStatus, {
-        solution: solutionText
-      });
-    }
-    closeModal();
-  };
+    // 2. Survol de la colonne (Drag Over)
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+    };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setPendingTransition(null);
-    setSolutionText('');
-  };
+    // 3. Dépôt du ticket (Drop)
+    const handleDrop = (e: React.DragEvent, statusName: string, statusId: number) => {
+        e.preventDefault();
+        const ticketId = e.dataTransfer.getData('text/plain');
 
-  return (
-    <div className="kanban-container">
-      <div className="kanban-header">
-        <h1>Ticket Kanban</h1>
-        <span className="kanban-subtitle">Glissez-déposez les tickets pour changer leur statut</span>
-      </div>
+        // Si le statut cible est "Solved" (ID 5) ou "Closed" (ID 6), on demande la solution
+        if (statusId === 5 || statusId === 6) {
+            setPendingDrop({ ticketId, statusId, statusName });
+            setIsModalOpen(true);
+        } else {
+            applyStatusChange(ticketId, statusId, statusName);
+        }
+    };
 
-      <div className="kanban-board">
-        {COLUMNS.map((column) => {
-          const columnTickets = tickets.filter(t => t.status === column.id);
+    // Applique la modification visuelle du statut
+    const applyStatusChange = (ticketId: any, statusId: number, statusName: string, extraData = {}) => {
+        setTickets(prev =>
+            prev.map(t => t.id?.toString() === ticketId.toString()
+                ? { ...t, status: { id: statusId, name: statusName }, ...extraData }
+                : t
+            )
+        );
+    };
 
-          return (
-            <div 
-              key={column.id} 
-              className="kanban-column"
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, column.id)}
-            >
-              <div className="kanban-column__header">
-                <h2>{column.title}</h2>
-                <span className="kanban-column__count">{columnTickets.length}</span>
-              </div>
+    // Validation du modal de saisie
+    const handleModalSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (pendingDrop && solutionText.trim()) {
+            applyStatusChange(pendingDrop.ticketId, pendingDrop.statusId, pendingDrop.statusName, {
+                solution: solutionText
+            });
+            closeModal();
+        }
+    };
 
-              <div className="kanban-column__list">
-                {columnTickets.map((ticket) => (
-                  <div 
-                    key={ticket.id} 
-                    className="kanban-card"
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, ticket.id)}
-                  >
-                    <div className="kanban-card__header">
-                      <span className="kanban-card__id">{ticket.id}</span>
-                      <span className={`kanban-card__badge kanban-card__badge--${ticket.urgency.toLowerCase()}`}>
-                        {ticket.urgency}
-                      </span>
-                    </div>
-                    <h3 className="kanban-card__title">{ticket.title}</h3>
-                    
-                    {ticket.solution && (
-                      <div className="kanban-card__solution">
-                        <strong>Solution :</strong> {ticket.solution}
-                      </div>
-                    )}
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setPendingDrop(null);
+        setSolutionText('');
+    };
 
-                    <div className="kanban-card__footer">
-                      <span className="kanban-card__meta">{ticket.category}</span>
-                      <span className="kanban-card__meta">{ticket.date}</span>
-                    </div>
-                  </div>
-                ))}
-                {columnTickets.length === 0 && (
-                  <div className="kanban-column__empty">Déposer un ticket ici</div>
-                )}
-              </div>
+    // Sécurité si les données ne sont pas encore chargées
+    if (!statusUtiliser) return <div className="state-loading">Chargement des données...</div>;
+
+    return (
+        <div className="kanban-container">
+            <div className="kanban-header">
+                <h1>Ticket Kanban</h1>
+                <span className="kanban-subtitle">Glissez les tickets d'une colonne à une autre</span>
             </div>
-          );
-        })}
-      </div>
 
-      {/* 3. Boîte de dialogue (Modal) */}
-      {isModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-box">
-            <div className="modal-header">
-              <h3>Résolution du Ticket {pendingTransition ? pendingTransition.ticketId : ''}</h3>
+            <div className="kanban-board">
+                {/* On boucle sur chaque statut retourné par l'objet statusUtiliser */}
+                {statusUtiliser.map(([statusName, statusId]) => {
+                    const columnTickets = tickets.filter(t => t.status?.id === statusId);
+
+                    return (
+                        <div
+                            key={statusId}
+                            className="kanban-column"
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDrop(e, statusName, statusId)}
+                        >
+                            <div className="kanban-column__header">
+                                <h2>{statusName}</h2>
+                                <span className="kanban-column__count">{columnTickets.length}</span>
+                            </div>
+
+                            <div className="kanban-column__list">
+                                {columnTickets.map((ticket: any) => (
+                                    <div
+                                        key={ticket.id}
+                                        className="kanban-card"
+                                        draggable
+                                        onDragStart={(e) => handleDragStart(e, ticket.id)}
+                                    >
+                                        <div className="kanban-card__header">
+                                            <span className="kanban-card__id">#{ticket.id || 'Sans ID'}</span>
+                                            <span className={`kanban-card__badge urgency-${ticket.urgency}`}>
+                                                Urgence {ticket.urgency}
+                                            </span>
+                                        </div>
+
+                                        <h3 className="kanban-card__title">{ticket.name}</h3>
+                                        <p className="kanban-card__desc">{ticket.content}</p>
+
+                                        {ticket.solution && (
+                                            <div className="kanban-card__solution">
+                                                <strong>Solution :</strong> {ticket.solution}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+
+                                {columnTickets.length === 0 && (
+                                    <div className="kanban-column__empty">Aucun ticket</div>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
-            <form onSubmit={handleModalSubmit}>
-              <div className="ticket-form__field">
-                <label htmlFor="solution">Informations de résolution *</label>
-                <textarea
-                  id="solution"
-                  rows={4}
-                  required
-                  placeholder="Veuillez décrire la solution apportée pour clore ce ticket..."
-                  value={solutionText}
-                  onChange={(e) => setSolutionText(e.target.value)}
-                />
-              </div>
-              <div className="modal-actions">
-                <button type="button" className="btn-secondary" onClick={closeModal}>
-                  Annuler
-                </button>
-                <button type="submit" className="ticket-form__submit">
-                  Valider et Clôturer
-                </button>
-              </div>
-            </form>
-          </div>
+
+            {/* Boîte de dialogue (Modal) */}
+            {isModalOpen && (
+                <div className="modal-overlay">
+                    <div className="modal-box">
+                        <div className="modal-header">
+                            <h3>Résolution Requise</h3>
+                        </div>
+                        <form onSubmit={handleModalSubmit}>
+                            <div className="ticket-form__field">
+                                <label>Veuillez renseigner la solution pour clore ce ticket *</label>
+                                <textarea
+                                    rows={4}
+                                    required
+                                    placeholder="Décrivez ici la solution trouvée..."
+                                    value={solutionText}
+                                    onChange={(e) => setSolutionText(e.target.value)}
+                                />
+                            </div>
+                            <div className="modal-actions">
+                                <button type="button" className="btn-secondary" onClick={closeModal}>
+                                    Annuler
+                                </button>
+                                <button type="submit" className="ticket-form__submit">
+                                    Sauvegarder
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 }
 
 export default TicketKanban;
