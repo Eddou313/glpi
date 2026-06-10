@@ -41,17 +41,17 @@ export function useImportFichier1(): UseImportFichier1Return {
             reset();
             try {
                 setPhase("registry");
-                await loadAssetRegistry();         
+                await loadAssetRegistry();
 
                 setPhase("preloading");
-                const cache = await preloadFichier1(rows);
+                const cache = await preloadFichier1(rows, imageMap);
 
                 setPhase("importing");
                 const results = await importAllAssets(rows, cache, (r) => {
                     resultsRef.current = [...resultsRef.current, r];
                     setLiveResults([...resultsRef.current]);
                     onProgress(r);
-                }, imageMap);
+                });
 
                 setPhase("done");
                 return results;

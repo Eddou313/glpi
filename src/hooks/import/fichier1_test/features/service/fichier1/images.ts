@@ -1,5 +1,7 @@
-import  { glpiPostV1 } from "../../../../../../api/db_glpi";
 import type { ImageMap, CachedDocument } from "../../types/fichier1";
+
+const V1_BASE   = import.meta.env.VITE_GLPI_LEGACY_API_URL || "/apirest.php";
+const APP_TOKEN = import.meta.env.VITE_GLPI_APP_TOKEN;
 
 const MIME_MAP: Record<string, string> = {
   jpg:  "image/jpeg",
@@ -9,48 +11,68 @@ const MIME_MAP: Record<string, string> = {
   webp: "image/webp",
 };
 
+export function extractId(raw: unknown): number {
+  if (typeof raw === "number")                           return raw;
+  if (Array.isArray(raw) && typeof raw[0] === "number") return raw[0];
+  if (Array.isArray(raw) && raw[0]?.id)                 return Number(raw[0].id);
+  if (typeof raw === "object" && raw !== null && "id" in raw)
+    return Number((raw as Record<string, unknown>).id);
+  throw new Error(`Réponse inattendue GLPI v1 : ${JSON.stringify(raw)}`);
+}
+
+function getMime(_fileName: string): string {
+  return "image/jpeg";
+}
+
+function normalizeFileName(fileName: string): string {
+  return fileName.replace(/\.[^.]+$/, ".jpeg");
+}
+
+function buildV1Headers(): Record<string, string> {
+  const session = localStorage.getItem("glpi_v1_session") ?? "";
+  return {
+    "Session-Token": session,
+    ...(APP_TOKEN ? { "App-Token": APP_TOKEN } : {}),
+  };
+}
+
 async function uploadDocument(
   assetName:  string,
   imageEntry: { blob: Blob; fileName: string }
 ): Promise<CachedDocument | null> {
   try {
-    const { blob, fileName } = imageEntry;
-    const ext  = fileName.split(".").pop()?.toLowerCase() ?? "jpg";
-    const mime = MIME_MAP[ext] ?? "application/octet-stream";
+    const normalizedName = normalizeFileName(imageEntry.fileName);
+    const mime           = getMime(imageEntry.fileName);
+    const file           = new File([imageEntry.blob], normalizedName, { type: mime });
 
     const form = new FormData();
     form.append(
       "uploadManifest",
       JSON.stringify({
         input: {
-          name:     fileName,
-          _filename: [fileName],
+          name:      normalizedName,
+          _filename: [normalizedName],
         },
       })
     );
-    form.append("filename[0]", new File([blob], fileName, { type: mime }));
+    form.append("filename[0]", file);
 
-    const token   = localStorage.getItem("glpi_v1_session");
-    const appToken = import.meta.env.VITE_GLPI_APP_TOKEN;
-    const v1Base  = import.meta.env.VITE_GLPI_LEGACY_API_URL || "/apirest.php";
-
-    const res = await fetch(`${v1Base}/Document`, {
+    const res = await fetch(`${V1_BASE}/Document`, {
       method:  "POST",
-      headers: {
-        "Session-Token": token ?? "",
-        ...(appToken ? { "App-Token": appToken } : {}),
-      },
-      body: form,
+      headers: buildV1Headers(), 
+      body:    form,
     });
 
     const text = await res.text();
-    if (!res.ok) throw new Error(`Upload v1 → ${res.status}: ${text}`);
 
-    const raw = JSON.parse(text);
-    const docId = extractId(raw);
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} : ${text}`);
+    }
 
-    console.log(`[Image] "${assetName}" → Document #${docId}`);
-    return { docId, fileName };
+    const docId = extractId(JSON.parse(text));
+    console.log(`[Image] "${assetName}" → Document #${docId} (${normalizedName})`);
+
+    return { docId, fileName: normalizedName };
 
   } catch (err) {
     console.warn(`[Image] Upload échoué pour "${assetName}" :`, err);
@@ -59,22 +81,38 @@ async function uploadDocument(
 }
 
 export async function linkDocumentToAsset(
-  assetId:     number,
+  assetId:      number,
   glpiItemType: string,
-  docId:       number
+  docId:        number
 ): Promise<boolean> {
   try {
-    const raw = await glpiPostV1<unknown>("Document_Item", {
-      input: {
-        documents_id: docId,
-        items_id:     assetId,
-        itemtype:     glpiItemType,
+    const res = await fetch(`${V1_BASE}/Document_Item`, {
+      method:  "POST",
+      headers: {
+        ...buildV1Headers(),
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        input: {
+          documents_id: docId,
+          items_id:     assetId,
+          itemtype:     glpiItemType,
+        },
+      }),
     });
 
-    const linkId = extractId(raw);
-    console.log(`[Image] Document #${docId} lié à ${glpiItemType} #${assetId} → lien #${linkId}`);
+    const text = await res.text();
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} : ${text}`);
+    }
+
+    const linkId = extractId(JSON.parse(text));
+    console.log(
+      `[Image] Document #${docId} lié à ${glpiItemType} #${assetId} → lien #${linkId}`
+    );
     return true;
+
   } catch (err) {
     console.warn(`[Image] Liaison échouée doc#${docId} → ${glpiItemType}#${assetId} :`, err);
     return false;
@@ -82,14 +120,15 @@ export async function linkDocumentToAsset(
 }
 
 export async function preloadImages(
-  imageMap:  ImageMap,
-  assetNames: string[],                          // noms des assets du CSV
-  cache:     Map<string, CachedDocument>
+  imageMap:   ImageMap,
+  assetNames: string[],
+  cache:      Map<string, CachedDocument>
 ): Promise<void> {
   const jobs = assetNames.map(async (name) => {
     const key   = name.toLowerCase();
     const entry = imageMap.get(key);
-    if (!entry || cache.has(key)) return;
+
+    if (!entry || cache.has(key)) return; 
 
     const doc = await uploadDocument(name, entry);
     if (doc) cache.set(key, doc);
@@ -97,14 +136,4 @@ export async function preloadImages(
 
   await Promise.all(jobs);
   console.log(`[Image] ${cache.size} document(s) uploadé(s)`);
-}
-
-// Extrait l'id depuis n'importe quelle réponse GLPI v1
-export function extractId(raw: unknown): number {
-  if (typeof raw === "number")                          return raw;
-  if (Array.isArray(raw) && typeof raw[0] === "number") return raw[0];
-  if (Array.isArray(raw) && raw[0]?.id)                 return Number(raw[0].id);
-  if (typeof raw === "object" && raw !== null && "id" in raw)
-    return Number((raw as Record<string, unknown>).id);
-  throw new Error(`Réponse inattendue de GLPI v1 : ${JSON.stringify(raw)}`);
 }

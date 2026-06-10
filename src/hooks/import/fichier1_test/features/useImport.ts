@@ -95,7 +95,7 @@ export function useImport(): UseImportReturn {
       if (rows1.length > 0) {
         setPhase("preloading");
         setCurrentFile("fichier1");
-        const cache = await preloadFichier1(rows1 as CsvRow1[]);
+        const cache = await preloadFichier1(rows1 as CsvRow1[], imageMap);
 
         setPhase("importing");
         const r1 = await importAllAssets(rows1 as CsvRow1[], cache, push, imageMap);

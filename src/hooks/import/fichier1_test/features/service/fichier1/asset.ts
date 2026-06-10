@@ -52,6 +52,7 @@ export async function importAssetRow(
 
         const res = await glpiPost<{ id: number }>(`Assets/${glpiItemType}`, payload);
         importCache.asset.set(row.Name, { id: res.id, itemType: glpiItemType });
+        
         let imageMsg = "";
         const docEntry = cache.documents.get(row.Name.toLowerCase());
         if (docEntry && docEntry.docId > 0) {
@@ -81,7 +82,7 @@ export async function importAllAssets(
     const results: ImportRowResult[] = [];
 
     for (let i = 0; i < rows.length; i++) {
-        const r = await importAssetRow(rows[i], i, cache, imageMap);
+        const r = await importAssetRow(rows[i], i, cache);
         results.push(r);
         onProgress(r);
     }

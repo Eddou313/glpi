@@ -11,7 +11,7 @@ async function upsertStatus(
     const key = label.trim();
     if (!key || cache.has(key)) return;
     try {
-        await await initV1Session(true);
+        // await await initV1Session(true);
         // State nécessite les droits admin → on passe par la session v1
         const res = await glpiPostV1<{ id: number }>("State", {
             input: [
@@ -119,6 +119,7 @@ async function upsertUser(
 }
 
 export async function preloadFichier1(rows: CsvRow1[],imageMap?: ImageMap ): Promise<PreloadCache> {
+    await initV1Session(true);
     const uniqueStatuses: Set<string> = new Set();
     const uniqueLocations: Set<string> = new Set();
     const uniqueManufacturers: Set<string> = new Set();
