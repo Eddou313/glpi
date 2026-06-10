@@ -21,7 +21,7 @@
 /* ───────── KANBAN BOARD ───────── */
 .kanban-board {
   display: flex;
-  gap: 1.25rem;
+  gap: 1.5rem; /* Augmenté pour un meilleur espacement entre les blocs */
   align-items: flex-start;
   width: 100%;
   overflow-x: auto;
@@ -38,79 +38,101 @@
 /* ───────── COLUMNS ───────── */
 .kanban-column {
   flex: 1;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: 20px; /* Des bords bien arrondis comme sur l'image */
   display: flex;
   flex-direction: column;
   max-height: 80vh;
   min-width: 300px;
+  padding: 1.5rem 1.25rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  
+  /* ASTUCE : On crée un effet pastel transparent par-dessus la couleur de fond */
+  background-image: linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85));
+  background-blend-mode: overlay;
 }
 
 .kanban-column__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-surface);
+  padding: 0 0.5rem 1rem 0.5rem; /* Ajusté */
+  border-bottom: none; /* Suppression de la ligne de séparation */
+  background: transparent; /* Transparent pour garder la couleur de la colonne */
 }
 
 .kanban-column__header h2 {
-  font-size: 0.95rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-text);
+  font-size: 1.35rem; 
+  font-weight: 700;
+  text-transform: none;
+  color: #1e293b; /* Un gris très sombre/bleuté pour que ça reste hyper propre */
   margin: 0;
 }
 
 .kanban-column__count {
-  font-size: 0.78rem;
-  font-weight: 600;
-  background: var(--color-bg);
-  color: var(--color-text-muted);
-  padding: 0.2rem 0.6rem;
-  border-radius: 20px;
-  border: 1px solid var(--color-border);
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.08); /* Bulle translucide et discrète */
+  color: #555;
+  padding: 0.15rem 0.5rem;
+  border-radius: 50%; /* Cercle parfait */
+  border: none;
 }
 
 .kanban-column__list {
-  padding: 1rem;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.85rem;
   overflow-y: auto;
-  background: var(--color-bg); /* Donne un léger contraste avec les cartes */
+  background: transparent; /* Doit être transparent */
   min-height: 150px;
 }
 
 .kanban-column__empty {
   text-align: center;
-  color: var(--color-text-muted);
+  color: rgba(0, 0, 0, 0.3);
   font-size: 0.85rem;
   padding: 2rem 0;
-  border: 2px dashed var(--color-border);
-  border-radius: var(--radius-sm);
+  border: 2px dashed rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+}
+
+/* Bouton "+ Ajouter 1 ticket" calqué sur l'image */
+.kanban-column__add-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem;
+  background: rgba(255, 255, 255, 0.5);
+  color: #334155;
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.kanban-column__add-btn:hover {
+  background: rgba(255, 255, 255, 0.8);
 }
 
 /* ───────── TICKET CARDS ───────── */
 .kanban-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: 1rem;
+  background: #ffffff; /* Fond blanc pur obligatoire pour ressortir sur la colonne */
+  border: none; /* Suppression des bordures agressives */
+  border-radius: 14px; /* Cartes bien arrondies */
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); /* Ombre douce */
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .kanban-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--color-primary);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
 }
 
 .kanban-card__header {
@@ -159,9 +181,9 @@
 }
 
 .kanban-card__title {
-  font-size: 0.875rem;
+  font-size: 1rem; /* Ajusté légèrement plus grand et lisible */
   font-weight: 600;
-  color: var(--color-text);
+  color: #1e293b;
   margin: 0;
   line-height: 1.4;
 }
@@ -212,7 +234,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(15, 23, 42, 0.4); /* Floutage sombre */
+  background: rgba(15, 23, 42, 0.4); 
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;

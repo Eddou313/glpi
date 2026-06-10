@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { CreateTicketRequest } from "../../../types/tickets/tickets.types";
 import { glpiGet, glpiPost } from "../../../api/db_client";
-import { glpiPostV1 } from "../../../api/db_glpi";
+import { glpiPostV1, glpiPut } from "../../../api/db_glpi";
 import type { GlpiAsset } from "../../../types/elements/items.types";
 import { TICKET_STATUS, type Parameter } from "../../../types/parameter/parameter";
 import { useParameter } from "../../parameter/useParameter";
@@ -14,37 +14,52 @@ const TicketServiceFront = {
     ),
   getAll: () =>
     glpiGet<CreateTicketRequest>("Assistance/Ticket"),
+  updateStatus: (ticketId: number, statusId: number) =>
+    glpiPut<{ id: number }>(`Assistance/Ticket/${ticketId}`, {
+      status: {
+        id: statusId
+      }
+    }),
 };
 
-export async function useTicketKanban() {
+export function useTicketKanban() {
   const [allTickets, setAllTickets] = useState<CreateTicketRequest | null>(null);
-  const [statusUtiliser,setStatusUtiliser ] = useState<Object | null>(null);
-  const [Parameters,setParameters] = useState<Parameter | null>(null);
-  const {getAllParameter} = useParameter();
+  const [statusUtiliser, setStatusUtiliser] = useState<[string, number][] | null>(null);
+  const [Parameters, setParameters] = useState<Parameter | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const loadTickets = async () =>
-  {
+  const { get } = useParameter();
+
+  const loadTickets = async () => {
     try {
-        const all = await TicketServiceFront.getAll() ;
-        const par = await getAllParameter;
-        setStatusUtiliser(Object.entries(TICKET_STATUS));
-        setAllTickets(all?all:null);
-        setParameters(par);
-    } catch (error : any) {
-      throw new  Error("Erreur :",error.message);
+      setLoading(true);
+      setError(null);
+      const all = await TicketServiceFront.getAll();
+      const par = await get();
+      setStatusUtiliser(Object.entries(TICKET_STATUS));
+      setAllTickets(all || null);
+      setParameters(par);
+    } catch (err: any) {
+      setError(err.message || "Une erreur est survenue");
+      console.error("Erreur Kanban:", err);
+    } finally {
+      setLoading(false);
     }
-  } 
-  useEffect(()=>{
-    loadTickets;
-  },[]);
+  };
 
-  return{
+  useEffect(() => {
+    loadTickets();
+  }, []);
+
+  return {
     allTickets,
     statusUtiliser,
-    Parameters
-  }
+    Parameters,
+    loading,
+    error
+  };
 }
-
 
 export async function linkItemsToTicket(
   ticketId: number,

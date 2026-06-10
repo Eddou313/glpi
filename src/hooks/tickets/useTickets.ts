@@ -9,7 +9,7 @@ export const TicketService = {
   getById: (id: number) =>
     glpiFetch<GLPITicketDetail>("GET", `Assistance/Ticket/${id}`),
 };
-// use
+
 export function useTickets() {
   const [tickets, setTickets] = useState<GLPITicketListe[]>([]);
   const [loading, setLoading] = useState(true);
