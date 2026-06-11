@@ -38,7 +38,7 @@ function formatDate(d: string) {
 }
 
 export function TicketsPage() {
-  const { tickets, loading, error, detail } = useTickets();
+  const { tickets, loading, error, detail, page, setPage, hasMore } = useTickets(1, 10);
   const [detailTicket, setDetailTicket] = useState<GLPITicketDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [linkedItems, setLinkedItems] = useState<any[]>([]);
@@ -52,14 +52,13 @@ export function TicketsPage() {
     setLoadingDetail(false);
   }
 
-  if (loading) return <p className="state-loading">Chargement des tickets…</p>;
-  if (error)   return <p className="state-error">{error}</p>;
+  if (error) return <p className="state-error">{error}</p>;
 
   return (
     <div className="tickets-page">
       <h2 className="page-title">Tickets</h2>
 
-      <div className="tickets-table-wrap">
+      <div className="tickets-table-wrap" style={{ opacity: loading ? 0.6 : 1 }}>
         <table className="tickets-table">
           <thead>
             <tr>
@@ -74,38 +73,69 @@ export function TicketsPage() {
             </tr>
           </thead>
           <tbody>
-            {tickets.map((t) => (
-              <tr key={t.id}>
-                <td className="tickets-table__id">#{t.id}</td>
-                <td className="tickets-table__name">{t.name}</td>
-                <td className="tickets-table__name">{t.content}</td>
-                <td className="tickets-table__name">{TICKET_TYPE_LABELS[t.type]}</td>
-                <td>
-                  {typeof t.status === 'object'
-                    ? <Badge label={(t.status as any).name ?? "—"} cls={STATUS_CLASS[(t.status as any).id] ?? "badge--gray"} />
-                    : <Badge label={STATUS_LABELS[t.status] ?? `Statut ${t.status}`} cls={STATUS_CLASS[t.status] ?? "badge--gray"} />
-                  }
-                </td>
-                <td>
-                  <Badge
-                    label={PRIORITY_LABELS[t.priority] ?? `Priorité ${t.priority}`}
-                    cls={PRIORITY_CLASS[t.priority]    ?? "badge--gray"}
-                  />
-                </td>
-                <td className="tickets-table__date">{formatDate(t.date)}</td>
-                <td>
-                  <button
-                    className="tickets-table__btn"
-                    onClick={() => openDetail(t.id)}
-                    disabled={loadingDetail}
-                  >
-                    Voir
-                  </button>
+            {tickets.length === 0 && !loading ? (
+              <tr>
+                <td colSpan={8} style={{ textAlign: 'center', padding: '20px' }}>
+                  Aucun ticket sur cette page.
                 </td>
               </tr>
-            ))}
+            ) : (
+              tickets.map((t) => (
+                <tr key={t.id}>
+                  <td className="tickets-table__id">#{t.id}</td>
+                  <td className="tickets-table__name">{t.name}</td>
+                  <td className="tickets-table__name">{t.content}</td>
+                  <td className="tickets-table__name">{TICKET_TYPE_LABELS[t.type]}</td>
+                  <td>
+                    {typeof t.status === 'object'
+                      ? <Badge label={(t.status as any).name ?? "—"} cls={STATUS_CLASS[(t.status as any).id] ?? "badge--gray"} />
+                      : <Badge label={STATUS_LABELS[t.status] ?? `Statut ${t.status}`} cls={STATUS_CLASS[t.status] ?? "badge--gray"} />
+                    }
+                  </td>
+                  <td>
+                    <Badge
+                      label={PRIORITY_LABELS[t.priority] ?? `Priorité ${t.priority}`}
+                      cls={PRIORITY_CLASS[t.priority]    ?? "badge--gray"}
+                    />
+                  </td>
+                  <td className="tickets-table__date">{formatDate(t.date)}</td>
+                  <td>
+                    <button
+                      className="tickets-table__btn"
+                      onClick={() => openDetail(t.id)}
+                      disabled={loadingDetail}
+                    >
+                      Voir
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
+      </div>
+
+      {/* BLOC DE PAGINATION CONTROLE */}
+      <div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginTop: '20px' }}>
+        <button 
+          className="tickets-table__btn"
+          onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+          disabled={page === 1 || loading}
+        >
+          Précédent
+        </button>
+        
+        <span className="pagination-info">
+          Page <strong>{page}</strong>
+        </span>
+
+        <button 
+          className="tickets-table__btn"
+          onClick={() => setPage(prev => prev + 1)}
+          disabled={!hasMore || loading}
+        >
+          Suivant
+        </button>
       </div>
 
       {/* Fenêtre flottante détail */}
