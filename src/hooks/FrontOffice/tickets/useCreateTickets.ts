@@ -14,9 +14,11 @@ export const TicketServiceFront = {
     ),
   getAll: () =>
     glpiGet<CreateTicketRequest>("Assistance/Ticket"),
-  updateStatus: async (ticketId: number, statusId: number, contenu?: string) => {
-    const todayStr = new Date().toISOString().slice(0, 19).replace('T', ' ');
-
+  updateStatus: async (ticketId: number, statusId: number, contenu?: string,date?:string) => {
+    let todayStr = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    if (date) {
+      todayStr = date;
+    }
     const tickets = await glpiPutV1<any>("Ticket", {
       input: [
         {

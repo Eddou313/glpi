@@ -4,6 +4,7 @@ import { resolveItems, analyzeRows2, parseItems, getCsvValue } from "./ticket.pr
 import { TICKET_STATUS_MAP, TICKET_PRIORITY_MAP, TICKET_TYPE_MAP, } from "../../types/fichier2";
 import type { CsvRow2, CachedTicket } from "../../types/fichier2";
 import type { ImportRowResult } from "../../importResult";
+import { TicketServiceFront } from "../../../../../FrontOffice/tickets/useCreateTickets";
 
 // ── Helper date ISO ───────────────────────────────────────────────────────────
 function toIso(date: string, heure: string): string {
@@ -119,15 +120,38 @@ async function importTicketRow(row: CsvRow2, index: number): Promise<ImportRowRe
   return result;
 }
 
+export async function IsInCache(Ref_Ticket: string): Promise<number | null> {
+  const tickets_caches = importCache.ticket.get(Ref_Ticket);
+  if (!tickets_caches) {
+    return null;
+  }
+  return tickets_caches;
+}
+
 export async function importFichier2(
   rows: CsvRow2[],
   onProgress: (r: ImportRowResult) => void
 ): Promise<ImportRowResult[]> {
+  console.log(rows);
 
-  analyzeRows2(rows); // log de stats avant import
+  analyzeRows2(rows);
 
   const results: ImportRowResult[] = [];
   for (let i = 0; i < rows.length; i++) {
+    const ref = getCsvValue(rows[i], ["Ref_Ticket", "RefTicket", "Num_Ticket"]);
+    const status = TICKET_STATUS_MAP[rows[i].Status];
+    let mes;
+    const id = await IsInCache(ref);
+    if (id) {
+      if(status>=5)
+      {
+        mes = "Tickets Terminer";
+      }
+      const dateIso = toIso(String(rows[i].Date), String(rows[i].Heure));
+      await TicketServiceFront.updateStatus(id,status,mes,dateIso);
+      console.log("Tickets "+id+" a mettre a jour avec status "+status);
+      continue; 
+    }
     const r = await importTicketRow(rows[i], i);
     results.push(r);
     onProgress(r);

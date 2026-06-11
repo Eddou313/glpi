@@ -39,8 +39,8 @@ export const TICKET_STATUS_MAP: Record<string, number> = {
     "Clos": 6,
     // Anglais
     "New": 1,
-    "Processing (Assigned)": 2,
-    "Processing (Planned)": 3,
+    "In progress (assigned)": 2,
+    "In progress (planned)": 3,
     "Pending": 4,
     "Solved": 5,
     "Closed": 6,

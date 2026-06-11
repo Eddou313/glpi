@@ -10,12 +10,10 @@ export interface ResolvedItem {
 export function getCsvValue(row: any, keys: string[]): string {
   if (!row || typeof row !== "object") return "";
   
-  // 1. Recherche exacte
   for (const k of keys) {
     if (row[k] !== undefined && row[k] !== null) return String(row[k]).trim();
   }
   
-  // 2. Recherche insensible à la casse et aux espaces
   const rowKeys = Object.keys(row);
   for (const k of keys) {
     const target = k.toLowerCase().replace(/[^a-z0-9]/g, "");
