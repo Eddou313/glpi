@@ -25,6 +25,11 @@ export function TicketKanban() {
     const [itemSearch, setItemSearch] = useState("");
 
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+    const [isClosed, setIsClosed] = useState(false);
+    const [commentaire, setCommentaire] = useState<string>("");
+    const [pendingStatusId, setPendingStatusId] = useState<number | null>(null);
+
     const [selectedTicket, setSelectedTicket] = useState<any>(null);
     const [langue, setLangue] = useState<number>(1);
 
@@ -81,17 +86,26 @@ export function TicketKanban() {
 
         if (!ticket || ticket.status?.id === targetStatusId) return;
 
+        if (targetStatusId >= 5) {
+            setSelectedTicket(ticket);
+            setPendingStatusId(targetStatusId);
+            setIsClosed(true);
+            return;
+        }
+        await proceedStatusUpdate(ticket, targetStatusId);
+    };
+    const proceedStatusUpdate = async (ticket: any, targetStatusId: number, commentaire?: string) => {
         const previousTickets = [...localTickets];
         const todayStr = new Date().toISOString();
 
         setLocalTickets(prevTickets =>
             prevTickets.map(t => {
-                if (t.id === ticketId) {
+                if (t.id === ticket.id) {
                     const statusMatch = statusUtiliser.find(([_, id]) => id === targetStatusId);
                     return {
                         ...t,
                         status: { id: targetStatusId, name: statusMatch ? statusMatch[0] : t.status?.name },
-                        date_mod: todayStr
+                        date_mod: todayStr,
                     };
                 }
                 return t;
@@ -99,15 +113,14 @@ export function TicketKanban() {
         );
 
         try {
-            const update = await TicketServiceFront.updateStatus(ticketId, targetStatusId);
-            alert("Tickets Modifier avec succes ");
+            await TicketServiceFront.updateStatus(ticket.id, targetStatusId);
+            alert("Ticket modifié avec succès");
         } catch (err: any) {
             alert("Erreur lors de la mise à jour du statut : " + err.message);
             setLocalTickets(previousTickets);
         }
     };
 
-    // ── ENREGISTREMENT DU TICKET DYNAMIQUE ──
     const handleOpenCreateModal = (statusId: number) => {
         setCurrentColumnStatusId(statusId);
         setIsCreateModalOpen(true);
@@ -172,14 +185,12 @@ export function TicketKanban() {
         setItemSearch("");
     };
 
-    // ── MODAL DE DÉTAILS ──
     const handleOpenDetailModal = async (ticket: any) => {
         setSelectedTicket(ticket);
         setIsDetailModalOpen(true);
-        setLinkedItems([]); // Réinitialise la liste
+        setLinkedItems([]);
         setLoadingItems(true);
         try {
-            // Récupération des liaisons Item_Ticket
             const relations = await TicketServiceFront.getLinkedItems(ticket.id);
 
             if (Array.isArray(relations)) {
@@ -393,6 +404,59 @@ export function TicketKanban() {
                         </div>
                         <div className="modal-actions">
                             <button type="button" className="btn-secondary" onClick={() => setIsDetailModalOpen(false)}>Fermer</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 3. POPUP DE CLÔTURE DE TICKET */}
+            {isClosed && selectedTicket && (
+                <div className="modal-overlay">
+                    <div className="modal-box detail-modal">
+                        <div className="modal-header">
+                            <h3>Clôture du Ticket #{selectedTicket.id}</h3>
+                        </div>
+                        <div className="ticket-detail-body" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <label style={{ fontWeight: 'bold' }}>Commentaire de clôture / Solution *</label>
+                            <textarea
+                                value={commentaire}
+                                onChange={(e) => setCommentaire(e.target.value)}
+                                placeholder="Entrez obligatoirement la solution ou le commentaire de clôture..."
+                                style={{ resize: 'vertical', minHeight: '100px', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                            />
+                        </div>
+                        <div className="modal-actions" style={{ marginTop: '15px' }}>
+                            <button
+                                type="button"
+                                className="btn-secondary"
+                                onClick={() => {
+                                    setIsClosed(false);
+                                    setSelectedTicket(null);
+                                    setPendingStatusId(null);
+                                    setCommentaire("");
+                                }}
+                            >
+                                Annuler
+                            </button>
+                            <button
+                                type="button"
+                                className="ticket-form__submit"
+                                style={{ backgroundColor: '#22c55e', color: 'white' }}
+                                onClick={async () => {
+                                    if (!commentaire.trim()) {
+                                        return alert("Le commentaire de clôture est obligatoire.");
+                                    }
+                                    if (pendingStatusId !== null) {
+                                        await proceedStatusUpdate(selectedTicket, pendingStatusId, commentaire.trim());
+                                    }
+                                    setIsClosed(false);
+                                    setSelectedTicket(null);
+                                    setPendingStatusId(null);
+                                    setCommentaire("");
+                                }}
+                            >
+                                Valider et Clôturer
+                            </button>
                         </div>
                     </div>
                 </div>
