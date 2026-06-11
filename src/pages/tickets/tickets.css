@@ -1,8 +1,3 @@
-/* ─── TicketsPage + TicketDetails — styles ───────────────────────────────── */
-
-/* ── Page ── */
-.tickets-page { }
-
 .page-title {
   font-size: 1.25rem;
   font-weight: 700;
@@ -93,7 +88,8 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, .45);
+  background: rgba(15, 23, 42, .25); /* ← était .45, réduire pour plus de transparence */
+  backdrop-filter: blur(2px);        /* ← optionnel : léger flou élégant sur le fond */
   z-index: 200;
   animation: fade-in .15s ease;
 }

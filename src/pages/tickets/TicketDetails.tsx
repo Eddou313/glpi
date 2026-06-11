@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import type { GLPITicketDetail } from "../../types/tickets/tickets.types";
+import { createPortal } from "react-dom";
 
 const URGENCY_LABELS: Record<number, string> = {
   1: "Très basse", 2: "Basse", 3: "Moyenne",
@@ -34,7 +35,8 @@ export function TicketDetails({
   ticket: GLPITicketDetail;
   onClose: () => void;
 }) {
-  return (
+  // return (
+  return createPortal(
     <>
       <div className="modal-overlay" onClick={onClose} />
       <div className="modal">
@@ -109,7 +111,8 @@ export function TicketDetails({
 
         </div>
       </div>
-    </>
+    </>,
+    document.body 
   );
 }
 // export function TicketDetails({ ticket }: any) {
