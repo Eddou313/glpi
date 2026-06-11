@@ -132,27 +132,49 @@ export async function importFichier2(
   rows: CsvRow2[],
   onProgress: (r: ImportRowResult) => void
 ): Promise<ImportRowResult[]> {
-  console.log(rows);
 
   analyzeRows2(rows);
-
   const results: ImportRowResult[] = [];
+
   for (let i = 0; i < rows.length; i++) {
-    const ref = getCsvValue(rows[i], ["Ref_Ticket", "RefTicket", "Num_Ticket"]);
-    const status = TICKET_STATUS_MAP[rows[i].Status];
-    let mes;
-    const id = await IsInCache(ref);
-    if (id) {
-      if(status>=5)
-      {
-        mes = "Tickets Terminer";
+    const row = rows[i];
+    const refRaw = getCsvValue(row, ["Ref_Ticket", "RefTicket", "Num_Ticket"]);
+    const fallbackRef = String(refRaw || `AUTO-${i + 1}`).trim();
+
+    const status = TICKET_STATUS_MAP[row.Status] ?? 1;
+    const titre = String(row.Titre ?? `Ticket-${i + 1}`);
+
+    const existingId = importCache.ticket.get(fallbackRef) || null;
+
+    if (existingId) {
+      const updateResult: ImportRowResult = {
+        row: i + 1,
+        name: titre,
+        glpiId: existingId,
+        status: "success",
+        message: `Mise à jour statut: ${row.Status}`,
+      };
+
+      try {
+        let mes;
+        if(status >= 5) {
+          mes = `Ticket terminé via import (Statut: ${row.Status})`;
+        }
+        const dateIso = toIso(String(row.Date), String(row.Heure));
+
+        await TicketServiceFront.updateStatus(existingId, status, mes, dateIso);
+        console.log(`[UPDATE] Ticket ${existingId} mis à jour (Statut ${status})`);
+      } catch (err) {
+        updateResult.status = "error";
+        updateResult.message = `Échec mise à jour : ${err instanceof Error ? err.message : String(err)}`;
       }
-      const dateIso = toIso(String(rows[i].Date), String(rows[i].Heure));
-      await TicketServiceFront.updateStatus(id,status,mes,dateIso);
-      console.log("Tickets "+id+" a mettre a jour avec status "+status);
-      continue; 
+
+      results.push(updateResult);
+      onProgress(updateResult);
+      continue;
     }
-    const r = await importTicketRow(rows[i], i);
+
+    const r = await importTicketRow(row, i);
     results.push(r);
     onProgress(r);
   }
