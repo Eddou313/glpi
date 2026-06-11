@@ -23,7 +23,7 @@ export async function fetchElementsForType(assetType: GlpiV2AssetTypeResponse): 
         const endpointMatch = assetType.href.match(/\/([^/]+)$/);
         const endpoint = endpointMatch ? endpointMatch[1] : assetType.itemtype;
 
-        const data = await glpiGetV1<any[]>(endpoint);
+        const data = await glpiGetV1<any[]>(endpoint+"?range=0-9999");
 
         if (Array.isArray(data)) {
             return data.map((item) => ({
