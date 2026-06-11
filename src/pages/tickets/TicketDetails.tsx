@@ -1,6 +1,8 @@
 import { X } from "lucide-react";
 import type { GLPITicketDetail } from "../../types/tickets/tickets.types";
 import { createPortal } from "react-dom";
+import { useEffect, useState } from "react";
+import { TicketServiceFront } from "../../hooks/FrontOffice/tickets/useCreateTickets";
 
 const URGENCY_LABELS: Record<number, string> = {
   1: "Très basse", 2: "Basse", 3: "Moyenne",
@@ -30,12 +32,13 @@ function Row({ label, value }: { label: string; value?: string | null }) {
 
 export function TicketDetails({
   ticket,
+  linkedItems,
   onClose,
 }: {
   ticket: GLPITicketDetail;
+  linkedItems: any[];
   onClose: () => void;
 }) {
-  // return (
   return createPortal(
     <>
       <div className="modal-overlay" onClick={onClose} />
@@ -64,13 +67,13 @@ export function TicketDetails({
           <div className="modal__section">
             <p className="modal__section-title">Informations</p>
             <div className="modal__grid">
-              <Row label="Statut"       value={ticket.status?.name} />
-              <Row label="Type"         value={TYPE_LABELS[ticket.type] ?? "—"} />
-              <Row label="Urgence"      value={URGENCY_LABELS[ticket.urgency] ?? "—"} />
-              <Row label="Priorité"     value={URGENCY_LABELS[ticket.priority] ?? "—"} />
-              <Row label="Catégorie"    value={ticket.category?.name} />
-              <Row label="Localisation" value={ticket.location?.name} />
-              <Row label="Entité"       value={ticket.entity?.name} />
+              <Row label="Statut" value={ticket.status?.name} />
+              <Row label="Type" value={TYPE_LABELS[ticket.type] ?? "—"} />
+              <Row label="Urgence" value={URGENCY_LABELS[ticket.urgency] ?? "—"} />
+              <Row label="Priorité" value={URGENCY_LABELS[ticket.priority] ?? "—"} />
+              {/* <Row label="Catégorie" value={ticket.category?.name} /> */}
+              {/* <Row label="Localisation" value={ticket.location?.name} /> */}
+              <Row label="Entité" value={ticket.entity?.name} />
               <Row label="Type requête" value={ticket.request_type?.name} />
             </div>
           </div>
@@ -79,8 +82,8 @@ export function TicketDetails({
           <div className="modal__section">
             <p className="modal__section-title">Dates</p>
             <div className="modal__grid">
-              <Row label="Création"     value={formatDate(ticket.date_creation)} />
-              <Row label="Ouverture"    value={formatDate(ticket.date)} />
+              <Row label="Création" value={formatDate(ticket.date_creation)} />
+              <Row label="Ouverture" value={formatDate(ticket.date)} />
               <Row label="Modification" value={formatDate(ticket.date_mod)} />
             </div>
           </div>
@@ -90,7 +93,7 @@ export function TicketDetails({
             <p className="modal__section-title">Personnes</p>
             <div className="modal__grid">
               <Row label="Demandeur" value={ticket.user_recipient?.name} />
-              <Row label="Éditeur"   value={ticket.user_editor?.name} />
+              <Row label="Éditeur" value={ticket.user_editor?.name} />
             </div>
           </div>
 
@@ -108,11 +111,25 @@ export function TicketDetails({
               </div>
             </div>
           )}
-
+          {linkedItems.length > 0 && (
+            <div className="modal__section">
+              <p className="modal__section-title">Éléments liés</p>
+              <div className="modal__linked-items">
+                {linkedItems.map((item) => (
+                  <li key={item.id} className="modal__linked-item">
+                    <ul className="modal__linked-item-name">{item.itemtype} - ID {item.items_id}</ul>
+                  </li>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* <pre>
+            {JSON.stringify(linkedItems, null, 2)}
+          </pre> */}
         </div>
       </div>
     </>,
-    document.body 
+    document.body
   );
 }
 // export function TicketDetails({ ticket }: any) {

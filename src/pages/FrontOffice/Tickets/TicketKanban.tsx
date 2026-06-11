@@ -6,16 +6,13 @@ import type { GlpiAsset } from "../../../types/elements/items.types";
 import './TicketKanban.css';
 
 export function TicketKanban() {
-    // Hooks d'API
     const { allTickets, statusUtiliser, Parameters, loading, error } = useTicketKanban();
     const { create: createTicket, loading: creationLoading, error: creationError } = useCreateTicket();
     const { items } = useItems();
     const { categories } = useCategory();
 
-    // États locaux pour le Kanban
     const [localTickets, setLocalTickets] = useState<any[]>([]);
 
-    // États pour la modal de création de ticket
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [currentColumnStatusId, setCurrentColumnStatusId] = useState<number | null>(null);
     const [title, setTitle] = useState("");
@@ -26,14 +23,12 @@ export function TicketKanban() {
     const [selectedItems, setSelectedItems] = useState<GlpiAsset[]>([]);
     const [itemSearch, setItemSearch] = useState("");
 
-    // États pour la modal de détails d'un ticket
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState<any>(null);
 
-    const [linkedItems, setLinkedItems] = useState<any[]>([]); // 👇 Nouvel état pour les éléments rattachés
+    const [linkedItems, setLinkedItems] = useState<any[]>([]);
     const [loadingItems, setLoadingItems] = useState(false);
 
-    // Initialisation locale des tickets
     useEffect(() => {
         if (allTickets && Array.isArray(allTickets)) {
             setLocalTickets(allTickets);
@@ -86,7 +81,6 @@ export function TicketKanban() {
         const previousTickets = [...localTickets];
         const todayStr = new Date().toISOString();
 
-        // Évolution optimiste de l'interface
         setLocalTickets(prevTickets =>
             prevTickets.map(t => {
                 if (t.id === ticketId) {

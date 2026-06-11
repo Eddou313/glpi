@@ -4,6 +4,7 @@ import { TicketDetails } from "./TicketDetails";
 import type { GLPITicketDetail } from "../../types/tickets/tickets.types";
 import "./tickets.css";
 import { TICKET_TYPE_LABELS } from "../../types/dashbord/dashbord.type";
+import { TicketServiceFront } from "../../hooks/FrontOffice/tickets/useCreateTickets";
 
 const STATUS_LABELS: Record<number, string> = {
   1: "Nouveau", 2: "En cours", 3: "En cours (planifié)",
@@ -40,11 +41,14 @@ export function TicketsPage() {
   const { tickets, loading, error, detail } = useTickets();
   const [detailTicket, setDetailTicket] = useState<GLPITicketDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
-
+  const [linkedItems, setLinkedItems] = useState<any[]>([]);
+      
   async function openDetail(id: number) {
     setLoadingDetail(true);
     const ticket = await detail(id);
     if (ticket) setDetailTicket(ticket);
+    const relations = await TicketServiceFront.getLinkedItems(ticket?.id ?? 0);
+    if(relations) setLinkedItems(relations);
     setLoadingDetail(false);
   }
 
@@ -108,6 +112,7 @@ export function TicketsPage() {
       {detailTicket && (
         <TicketDetails
           ticket={detailTicket}
+          linkedItems={linkedItems}
           onClose={() => setDetailTicket(null)}
         />
       )}
