@@ -44,6 +44,9 @@ export const TICKET_STATUS_MAP: Record<string, number> = {
     "Pending": 4,
     "Solved": 5,
     "Closed": 6,
+    // aide
+    "Processing (assigned)": 2,
+    "In Progress":2
 };
 
 // ── Urgence / Impact / Priorité ───────────────────────────────────────────────
