@@ -23,8 +23,10 @@ function toIso(date: string, heure: string): string {
 }
 
 function buildTicketPayload(row: CsvRow2): Record<string, unknown> {
-  const statusId = TICKET_STATUS_MAP[row.Status] ?? 1;
-  const priorityId = TICKET_PRIORITY_MAP[row.Priority] ?? 3;
+  // const statusRaw = getCsvValue(row, ["Status", "STATUS", "STATuS", "statut", "Statut"]);
+  // const statusId = TICKET_STATUS_MAP[statusRaw] ?? 1;
+  const priorityRaw = getCsvValue(row, ["Priority", "PRIORITY", "priorite", "Priorité"]);
+  const priorityId = TICKET_PRIORITY_MAP[priorityRaw] ?? 3;
   const typeId = TICKET_TYPE_MAP[String(row.Type)] ?? Number(row.Type) ?? 1;
   const dateIso = toIso(String(row.Date), String(row.Heure));
 
@@ -36,7 +38,7 @@ function buildTicketPayload(row: CsvRow2): Record<string, unknown> {
     urgency: priorityId,
     impact: priorityId,
     priority: priorityId,
-    status: { id: statusId },
+    status: { id: 1 },
   };
 }
 
@@ -86,12 +88,15 @@ async function importTicketRow(row: CsvRow2, index: number): Promise<ImportRowRe
     const rawItems = row.Items || (row as any)["items"] || (row as any)["Items"];
     const resolvedItems = resolveItems(rawItems);
 
-    console.log("[Import] Création ticket '"+{titre}+"' avec référence \""+fallbackRef+"\" et "+resolvedItems);
-
     const payload = buildTicketPayload(row);
     const res = await glpiPost<{ id: number }>("Assistance/Ticket", payload);
 
     const linkedNames = await linkItemsToTicket(res.id, resolvedItems);
+
+    const statusRaw = getCsvValue(row, ["Status", "STATUS", "STATuS", "statut", "Statut"]);
+    const statusId = TICKET_STATUS_MAP[statusRaw] ?? 1;
+    
+    await TicketServiceFront.updateStatus(res.id, statusId);
 
     const cachedTicket: CachedTicket = {
       id: res.id,
@@ -142,8 +147,8 @@ export async function importFichier2(
     const row = rows[i];
     const refRaw = getCsvValue(row, ["Ref_Ticket", "RefTicket", "Num_Ticket"]);
     const fallbackRef = String(refRaw || `AUTO-${i + 1}`).trim();
-
-    const status = TICKET_STATUS_MAP[row.Status] ?? 1;
+    const statusRaw = getCsvValue(row, ["Status", "STATUS", "STATuS", "statut", "Statut"]);
+    const status = TICKET_STATUS_MAP[statusRaw] ?? 1;
     const titre = String(row.Titre ?? `Ticket-${i + 1}`);
 
     const existingId = importCache.ticket.get(fallbackRef) || null;
@@ -159,7 +164,7 @@ export async function importFichier2(
 
       try {
         let mes;
-        if(status >= 5) {
+        if (status >= 5) {
           mes = `Ticket terminé via import (Statut: ${row.Status})`;
         }
         const dateIso = toIso(String(row.Date), String(row.Heure));
