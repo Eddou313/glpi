@@ -86,8 +86,8 @@ export const parseFile = <T>(
     });
 };
 
-export function validateColumnNames(csvColumns: string[], // colonnes trouvées dans le CSV
-    expectedColumns: (keyof any)[] // colonnes attendues
+export function validateColumnNames(csvColumns: string[],
+    expectedColumns: (keyof any)[] 
 ): void {
     const normalizedCsvColumns =csvColumns.map(normalizeColumnName);
     const normalizedExpectedColumns =expectedColumns.map(col =>normalizeColumnName(String(col)));

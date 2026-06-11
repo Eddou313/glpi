@@ -113,7 +113,7 @@ export function TicketKanban() {
         );
 
         try {
-            await TicketServiceFront.updateStatus(ticket.id, targetStatusId);
+            await TicketServiceFront.updateStatus(ticket.id, targetStatusId,commentaire);
             alert("Ticket modifié avec succès");
         } catch (err: any) {
             alert("Erreur lors de la mise à jour du statut : " + err.message);

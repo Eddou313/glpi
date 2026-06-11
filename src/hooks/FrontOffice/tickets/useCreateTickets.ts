@@ -14,10 +14,10 @@ export const TicketServiceFront = {
     ),
   getAll: () =>
     glpiGet<CreateTicketRequest>("Assistance/Ticket"),
-  updateStatus: (ticketId: number, statusId: number) => {
+  updateStatus: async (ticketId: number, statusId: number, contenu?: string) => {
     const todayStr = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-    return glpiPutV1<any>("Ticket", {
+    const tickets = await glpiPutV1<any>("Ticket", {
       input: [
         {
           id: ticketId,
@@ -26,6 +26,23 @@ export const TicketServiceFront = {
         }
       ]
     });
+    if (contenu && contenu.trim() !== "") {
+      await TicketServiceFront.insertSuivie(ticketId, contenu);
+    }
+    return tickets;
+  },
+  insertSuivie: (ticketId: number, content: string) => {
+    return glpiPostV1<any>(
+      `/Ticket/${ticketId}/ITILFollowup`,
+      {
+        input: {
+          itemtype: "Ticket",
+          items_id: ticketId,
+          content: content,
+          is_private: false
+        }
+      }
+    );
   },
   getLinkedItems: (ticketId: number) =>
     glpiGetV1<any[]>(`Ticket/${ticketId}/Item_Ticket`),
