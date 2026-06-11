@@ -4,6 +4,7 @@ import { useItems } from "../../../hooks/FrontOffice/elements/useItems";
 import { useCategory } from "../../../hooks/category/useCategory";
 import type { GlpiAsset } from "../../../types/elements/items.types";
 import './TicketKanban.css';
+import { LANGUE } from '../../../types/parameter/parameter';
 
 export function TicketKanban() {
     const { allTickets, statusUtiliser, Parameters, loading, error } = useTicketKanban();
@@ -25,9 +26,19 @@ export function TicketKanban() {
 
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState<any>(null);
+    const [langue, setLangue] = useState<number>(1);
 
     const [linkedItems, setLinkedItems] = useState<any[]>([]);
     const [loadingItems, setLoadingItems] = useState(false);
+
+    const getStatusTranslation = (statusId: number | undefined, defaultFallback: string = "") => {
+        if (!statusId) return defaultFallback;
+        const column = paramsArray.find(col => col.technical_name === statusId);
+        if (column) {
+            return langue === 1 ? column.default_name_fr : column.name_mg;
+        }
+        return defaultFallback;
+    };
 
     useEffect(() => {
         if (allTickets && Array.isArray(allTickets)) {
@@ -53,15 +64,7 @@ export function TicketKanban() {
 
     // Configuration dynamique des colonnes
     const paramsArray = Array.isArray(Parameters) ? Parameters : (Parameters ? [Parameters] : [] as any[]);
-    const columns = paramsArray.map((param: any) => {
-        const statusMatch = statusUtiliser.find(([_, id]) => id === param.technical_name);
-        return {
-            id: param.technical_name,
-            title: statusMatch ? statusMatch[0] : `Statut ${param.technical_name}`,
-            bgColor: param.bg_color || '#ccc'
-        };
-    });
-
+    const columns = paramsArray;
     // ── GESTION DU DRAG & DROP ──
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>, ticketId: number) => {
         e.dataTransfer.setData('text/plain', ticketId.toString());
@@ -200,17 +203,29 @@ export function TicketKanban() {
     return (
         <div className="kanban-container">
             <div className="kanban-header">
-                <h1>Liste Ticket de forme en Kanban</h1>
+                <div className="language-selector-wrapper">
+                    <label htmlFor="traduction" className="language-label">Traduction Statut :</label>
+                    <select
+                        id="traduction"
+                        className="language-select"
+                        value={langue}
+                        onChange={(e) => setLangue(Number(e.target.value))}
+                    >
+                        {Object.entries(LANGUE).map(([name, id]) => (
+                            <option key={id} value={id}>{name}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             <div className="kanban-board">
                 {columns.map((column) => {
-                    const columnTickets = localTickets.filter(t => t.status?.id === column.id);
+                    const columnTickets = localTickets.filter(t => t.status?.id === column.technical_name);
 
                     return (
-                        <div key={column.id} className="kanban-column" onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, column.id)} style={{ backgroundColor: column.bgColor }} >
+                        <div key={column.technical_name} className="kanban-column" onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, column.technical_name)} style={{ backgroundColor: column.bg_color }} >
                             <div className="kanban-column__header">
-                                <h2>{column.title}</h2>
+                                <h2>{langue === 1 ? column.default_name_fr : column.name_mg}</h2>
                                 <span className="kanban-column__count">{columnTickets.length}</span>
                             </div>
 
@@ -221,7 +236,7 @@ export function TicketKanban() {
                                         className="kanban-card"
                                         draggable
                                         onDragStart={(e) => handleDragStart(e, ticket.id)}
-                                        onClick={() => handleOpenDetailModal(ticket)} /* Ouvre le détail complet */
+                                        onClick={() => handleOpenDetailModal(ticket)}
                                     >
                                         <div className="kanban-card__header">
                                             <span className="kanban-card__id">#{ticket.id}</span>
@@ -233,8 +248,8 @@ export function TicketKanban() {
                                     </div>
                                 ))}
 
-                                {column.id === 1 && (
-                                    <div className="kanban-column__add-btn" onClick={() => handleOpenCreateModal(column.id)}>
+                                {column.technical_name === 1 && (
+                                    <div className="kanban-column__add-btn" onClick={() => handleOpenCreateModal(column.technical_name)}>
                                         <span>+ Ajouter 1 ticket</span>
                                     </div>
                                 )}
@@ -337,7 +352,12 @@ export function TicketKanban() {
                         <div className="ticket-detail-body" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             <div><strong>Titre :</strong> {selectedTicket.name || 'Sans titre'}</div>
                             <div><strong>Description :</strong> {selectedTicket.content || 'Aucune description'}</div>
-                            <div><strong>Statut actuel :</strong> <span className="kanban-column__count" style={{ borderRadius: '4px' }}>{selectedTicket.status?.name}</span></div>
+                            <div>
+                                <strong>Statut actuel :</strong>{' '}
+                                <span className="kanban-column__count-status">
+                                    {getStatusTranslation(selectedTicket.status?.id, selectedTicket.status?.name)}
+                                </span>
+                            </div>
                             <div style={{ display: 'flex', gap: '20px' }}>
                                 <div><strong>Urgence :</strong> {selectedTicket.urgency}/5</div>
                                 <div><strong>Impact :</strong> {selectedTicket.impact}/5</div>

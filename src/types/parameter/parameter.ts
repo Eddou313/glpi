@@ -14,3 +14,8 @@ export const TICKET_STATUS: Record<string, number> = {
     "Solved": 5,
     "Closed": 6,
 };
+
+export const LANGUE: Record<string, number> = {
+    "Français": 1,
+    "Malagasy": 2,
+};
