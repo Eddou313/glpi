@@ -35,28 +35,31 @@ export const parseFile = <T>(
                                 //     );
                                 // }
                                 if (rawValue) {
-                                    if (!isValidCsvDate(rawValue)) {
-                                        let formattedDate = rawValue;
-                                        // Cas 1 : Format YYYY-MM-DD ou YYYY/MM/DD (ex: 2026-06-11)
-                                        if (/^\d{4}[-/]\d{2}[-/]\d{2}/.test(rawValue)) {
-                                            const parts = rawValue.split(/[-/]/);
-                                            formattedDate = `${parts[2].slice(0, 2)}/${parts[1]}/${parts[0]}`;
-                                        }
-                                        // Cas 2 : Format DD-MM-YYYY (ex: 11-06-2026)
-                                        else if (/^\d{2}-\d{2}-\d{4}/.test(rawValue)) {
-                                            formattedDate = rawValue.replace(/-/g, "/");
-                                        }
-                                        // Cas 3 : Format ISO complet (ex: 2026-06-11T22:30:00)
-                                        else if (!isNaN(Date.parse(rawValue))) {
-                                            const d = new Date(rawValue);
-                                            const day = String(d.getDate()).padStart(2, '0');
-                                            const month = String(d.getMonth() + 1).padStart(2, '0');
-                                            const year = d.getFullYear();
-                                            formattedDate = `${day}/${month}/${year}`;
-                                        }
-                                        // On applique la valeur corrigée à la ligne du CSV
+                                    let formattedDate = rawValue;
+                                    // 1. Cas Format YYYY-MM-DD ou YYYY/MM/DD (ex: 2026-06-11)
+                                    if (/^\d{4}[-/]\d{2}[-/]\d{2}/.test(rawValue)) {
+                                        const parts = rawValue.split(/[-/]/);
+                                        formattedDate = `${parts[2].slice(0, 2)}/${parts[1]}/${parts[0]}`;
+                                    }
+                                    // 2. Cas Format avec des slashs ou tirets existants (ex: 23/2/2026, 1/5/2024, 2-12-2025)
+                                    else if (/^\d{1,2}[-/]\d{1,2}[-/]\d{4}/.test(rawValue)) {
+                                        const parts = rawValue.split(/[-/]/);
+                                        const day = parts[0].padStart(2, '0');
+                                        const month = parts[1].padStart(2, '0');
+                                        const year = parts[2].slice(0, 4);
+                                        formattedDate = `${day}/${month}/${year}`;
+                                    }
+                                    // 3. Cas de secours si c'est un format ISO complet (ex: 2026-06-11T22:30:00)
+                                    else if (rawValue.includes('T') && !isNaN(Date.parse(rawValue))) {
+                                        const d = new Date(rawValue);
+                                        const day = String(d.getDate()).padStart(2, '0');
+                                        const month = String(d.getMonth() + 1).padStart(2, '0');
+                                        const year = d.getFullYear();
+                                        formattedDate = `${day}/${month}/${year}`;
+                                    }
+                                    // Si la valeur a été modifiée ou complétée, on met à jour et on log
+                                    if (rawValue !== formattedDate) {
                                         row[dateColumn] = formattedDate;
-
                                         console.log(`[Date Fix] Colonne "${dateColumn}": "${rawValue}" transformée en "${formattedDate}"`);
                                     }
                                 }

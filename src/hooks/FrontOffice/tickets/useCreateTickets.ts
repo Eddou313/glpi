@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { CreateTicketRequest } from "../../../types/tickets/tickets.types";
 import { glpiGet, glpiPost } from "../../../api/db_client";
-import { glpiGetV1, glpiPostV1,  glpiPutV1 } from "../../../api/db_glpi";
+import { glpiGetV1, glpiPostV1, glpiPutV1 } from "../../../api/db_glpi";
 import type { GlpiAsset } from "../../../types/elements/items.types";
 import { TICKET_STATUS, type Parameter } from "../../../types/parameter/parameter";
 import { useParameter } from "../../parameter/useParameter";
@@ -14,7 +14,42 @@ export const TicketServiceFront = {
     ),
   getAll: () =>
     glpiGet<CreateTicketRequest>("Assistance/Ticket"),
-  updateStatus: async (ticketId: number, statusId: number, contenu?: string,date?:string) => {
+  updateFull: async (
+    ticketId: number,
+    payload: {
+      statusId: number;
+      date: string;
+      typeId: number;
+      name: string;
+      priorityId: number;
+      content: string;
+    },
+    contenuSuivi?: string
+  ) => {
+    const formattedDate = payload.date.replace('T', ' ').slice(0, 19);
+    const tickets = await glpiPutV1<any>("Ticket", {
+      input: [
+        {
+          id: ticketId,
+          name: payload.name,
+          content: payload.content,
+          status: payload.statusId,
+          date: formattedDate,
+          date_mod: formattedDate,
+          type: payload.typeId,
+          urgency: payload.priorityId,
+          impact: payload.priorityId,
+          priority: payload.priorityId
+        }
+      ]
+    });
+
+    if (contenuSuivi && contenuSuivi.trim() !== "") {
+      await TicketServiceFront.insertSuivie(ticketId, contenuSuivi);
+    }
+    return tickets;
+  },
+  updateStatus: async (ticketId: number, statusId: number, contenu?: string, date?: string) => {
     let todayStr = new Date().toISOString().slice(0, 19).replace('T', ' ');
     if (date) {
       todayStr = date.replace('T', ' ').slice(0, 19);;

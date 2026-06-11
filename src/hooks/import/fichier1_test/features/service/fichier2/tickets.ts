@@ -86,6 +86,8 @@ async function importTicketRow(row: CsvRow2, index: number): Promise<ImportRowRe
     const rawItems = row.Items || (row as any)["items"] || (row as any)["Items"];
     const resolvedItems = resolveItems(rawItems);
 
+    console.log("[Import] Création ticket '"+{titre}+"' avec référence \""+fallbackRef+"\" et "+resolvedItems);
+
     const payload = buildTicketPayload(row);
     const res = await glpiPost<{ id: number }>("Assistance/Ticket", payload);
 
