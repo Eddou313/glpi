@@ -16,7 +16,11 @@ db.exec(
     default_name_fr TEXT NOT NULL, 
     name_mg TEXT NOT NULL,       
     bg_color TEXT NOT NULL DEFAULT '#FFFFFF' 
-);
+  );
+  INSERT INTO kanban_statuses(technical_name,default_name_fr,name_mg,bg_color) VALUES
+  (1,'nouveau','vaovao','#2b993a'),
+  (2,'en cours','efa manao','#837123'),
+  (6,'terminer','vita','#bb8900');
 `
 );
 console.log("creation fait !");
