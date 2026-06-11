@@ -12,6 +12,9 @@ export function ItemsPage() {
   const [statusFilter, setStatusFilter] = useState<GLPIState | null>(null);
   const { assetTypes } = useAssetTypes();
 
+  const [page, setPage] = useState(1);
+  const afficheTotal = 10;
+
   const filteredItems = items.filter((item) => {
     const matchId =
       id === "" ||
@@ -35,6 +38,14 @@ export function ItemsPage() {
 
     return matchId && matchName && matchStatus && matchType;
   });
+  // calcule les indices pour découper le tableau filtré
+  const indexOfLastItem = page * afficheTotal;
+  const indexOfFirstItem = indexOfLastItem - afficheTotal;
+
+  //element  afficher uniquement sur la page active
+  const paginatedItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
+
+  const hasMore = indexOfLastItem < filteredItems.length;
 
   if (loading) return <p className="state-loading">Chargement...</p>;
   if (error) return <p className="state-error">{error}</p>;
@@ -106,7 +117,7 @@ export function ItemsPage() {
             </tr>
           </thead>
           <tbody>
-            {filteredItems.map((item) => (
+            {paginatedItems.map((item) => (
               <tr key={`${item.itemType}-${item.id}`}>
                 <td>{item.id}</td>
                 <td>{item.name ?? "-"}</td>
@@ -116,6 +127,28 @@ export function ItemsPage() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginTop: '20px' }}>
+        <button 
+          className="tickets-table__btn"
+          disabled = {page === 1}
+          onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+        >
+          Précédent
+        </button>
+        
+        <span className="pagination-info">
+          Page <strong>{page} / {Math.ceil(filteredItems.length / afficheTotal) || 1}</strong>
+        </span>
+
+        <button 
+          className="tickets-table__btn"
+          disabled = {!hasMore}
+          onClick={() => setPage(prev => prev + 1)}
+        >
+          Suivant
+        </button>
       </div>
     </div>
   );

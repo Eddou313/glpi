@@ -13,9 +13,7 @@ export function useItems() {
     try {
       setLoading(true);
       setError(null);
-      // récupération des types
       const assetTypes = await getAssetTypes();
-      // récupération des assets de chaque type
       const results = await Promise.all(
         assetTypes.map(type =>
           getAssetsByType(type.itemtype)
@@ -27,7 +25,6 @@ export function useItems() {
 
       const assets = results
         .flat()
-        // exclure les éléments supprimés
         .filter(asset => !asset.is_deleted);
 
       setItems(assets);
