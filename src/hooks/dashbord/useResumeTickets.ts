@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { glpiGet } from '../../api/db_glpi';
-import {TICKET_STATUS_LABELS,TICKET_TYPE_LABELS,TICKET_PRIORITY_LABELS,type GlpiTicket,type TicketSummary,} from '../../types/dashbord/dashbord.type';
+import { glpiGet, glpiGetV1 } from '../../api/db_glpi';
+import { TICKET_STATUS_LABELS, TICKET_TYPE_LABELS, TICKET_PRIORITY_LABELS, type GlpiTicket, type TicketSummary, } from '../../types/dashbord/dashbord.type';
 
 function groupAndCount<T>(
   items: T[],
@@ -16,7 +16,7 @@ function groupAndCount<T>(
       ? Number((raw as any).id ?? (raw as any).value ?? 0)
       : Number(raw);
 
-    if (!Number.isFinite(key)) continue;   
+    if (!Number.isFinite(key)) continue;
     counts[key] = (counts[key] ?? 0) + 1;
   }
 
@@ -26,28 +26,48 @@ function groupAndCount<T>(
   }));
 }
 export function useTicketSummary() {
-  const [summary, setSummary]   = useState<TicketSummary | null>(null);
-  const [loading, setLoading]   = useState(false);
-  const [error,   setError]     = useState<string | null>(null);
+  const [summary, setSummary] = useState<TicketSummary | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetch = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const tickets = await glpiGet<GlpiTicket[]>(
-        'Assistance/Ticket?range=0-9999&fields=id,status,type,priority'
-      );
+      let allTickets: GlpiTicket[] = [];
+      let currentRangeStart = 0;
+      const batchSize = 100; // Limite de sécurité GLPI v1
+      let hasMore = true;
+
+      while (hasMore) {
+        const rangeEnd = currentRangeStart + batchSize - 1;
+
+        const url = `Ticket?range=${currentRangeStart}-${rangeEnd}`;
+        const ticketsBatch = await glpiGetV1<GlpiTicket[]>(url);
+
+        if (ticketsBatch && ticketsBatch.length > 0) {
+          allTickets = [...allTickets, ...ticketsBatch];
+
+          if (ticketsBatch.length < batchSize) {
+            hasMore = false;
+          } else {
+            currentRangeStart += batchSize;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
 
       setSummary({
-        total:      tickets.length,
-        byStatus:   groupAndCount(tickets, t => t.status,   TICKET_STATUS_LABELS),
-        byType:     groupAndCount(tickets, t => t.type,     TICKET_TYPE_LABELS),
-        byPriority: groupAndCount(tickets, t => t.priority, TICKET_PRIORITY_LABELS),
-    });
+        total: allTickets.length,
+        byStatus: groupAndCount(allTickets, t => t.status, TICKET_STATUS_LABELS),
+        byType: groupAndCount(allTickets, t => t.type, TICKET_TYPE_LABELS),
+        byPriority: groupAndCount(allTickets, t => t.priority, TICKET_PRIORITY_LABELS),
+      });
 
     } catch (err: any) {
-      setError(err.message || 'Erreur lors du chargement des tickets');
+      setError(err.message || 'Erreur lors du chargement complet des tickets v1');
     } finally {
       setLoading(false);
     }
