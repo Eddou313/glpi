@@ -4,16 +4,13 @@ import { parseFr, normalizeRef, getCsvValue } from "./cost.preload";
 import type { CsvRow3 } from "../../types/fichier3";
 import type { ImportRowResult } from "../../importResult";
 
-// Payload épuré correspondant au modèle attendu par l'endpoint V2
 export interface GlpiTicketCostPayload {
   duration: number;
   cost_time: number;
   cost_fixed: number;
   name?: string;
-  // Vous pouvez ajouter "comment", "date_begin", etc., si votre CSV contient ces infos
 }
 
-// ── Construction du payload ───────────────────────────────────────────────────
 function buildCostPayload(row: CsvRow3): GlpiTicketCostPayload {
   const rawDuration = getCsvValue(row, ["duration_second", "Duration_second", "duration"]);
   const rawTimeCost = getCsvValue(row, ["time_cost", "Time_Cost", "timecost"]);

@@ -84,14 +84,12 @@ export function CostsPage() {
   const totalGlpi = rows.reduce((s, r) => s + r.glpi_cost, 0);
   const totalKanban = rows.reduce((s, r) => s + r.kanban_cost, 0);
   const totalAll = rows.reduce((s, r) => s + r.total, 0);
+  const totalElement = rows.reduce((s, r) => s + r.cost_per_element, 0);
 
   return (
     <div className="costs-page">
       <div className="costs-header">
         <h2>Récapitulatif des Coûts</h2>
-        {/* <button className="costs-refresh-btn" onClick={load} disabled={loading}>
-          {loading ? 'Chargement…' : '↻ Actualiser'}
-        </button> */}
       </div>
 
       {error && <div className="costs-error">{error}</div>}
@@ -136,7 +134,7 @@ export function CostsPage() {
                   <td className="costs-num"><strong>{fmt(totalGlpi)}</strong></td>
                   <td className="costs-num costs-kanban"><strong>{fmt(totalKanban)}</strong></td>
                   <td></td>
-                  <td></td>
+                  <td className="costs-num costs-total"><strong>{fmt(totalElement)}</strong></td>
                   <td className="costs-num costs-total"><strong>{fmt(totalAll)}</strong></td>
                 </tr>
               </tfoot>
