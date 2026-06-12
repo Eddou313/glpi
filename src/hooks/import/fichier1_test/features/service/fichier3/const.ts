@@ -1,28 +1,37 @@
-import { glpiPostV1 } from "../../../../../../api/db_glpi";
+import { glpiPost } from "../../../../../../api/db_glpi";
 import { importCache } from "../importCaches";
 import { parseFr, normalizeRef, getCsvValue } from "./cost.preload";
-import type { CsvRow3, GlpiTicketCostPayload } from "../../types/fichier3";
+import type { CsvRow3 } from "../../types/fichier3";
 import type { ImportRowResult } from "../../importResult";
 
+// Payload épuré correspondant au modèle attendu par l'endpoint V2
+export interface GlpiTicketCostPayload {
+  duration: number;
+  cost_time: number;
+  cost_fixed: number;
+  name?: string;
+  // Vous pouvez ajouter "comment", "date_begin", etc., si votre CSV contient ces infos
+}
+
 // ── Construction du payload ───────────────────────────────────────────────────
-function buildCostPayload(
-  ticketId: number,
-  row: CsvRow3
-): GlpiTicketCostPayload {
-  const rawDuration = getCsvValue(row, ["Duration_second", "duration_second", "duration"]);
-  const rawTimeCost = getCsvValue(row, ["Time_Cost", "time_cost", "TimeCost"]);
-  const rawFixedCost = getCsvValue(row, ["Fixed_Cost", "fixed_cost", "FixedCost"]);
+function buildCostPayload(row: CsvRow3): GlpiTicketCostPayload {
+  const rawDuration = getCsvValue(row, ["duration_second", "Duration_second", "duration"]);
+  const rawTimeCost = getCsvValue(row, ["time_cost", "Time_Cost", "timecost"]);
+  const rawFixedCost = getCsvValue(row, ["fixed_cost", "Fixed_Cost", "fixedcost"]);
+
+  const durationValue = parseInt(rawDuration, 10) || 0;
+  console.log("Durée lue du CSV :", durationValue);
 
   return {
-    tickets_id: ticketId,
-    duration: parseInt(rawDuration, 10) || 0,
+    duration: durationValue,
     cost_time: parseFr(rawTimeCost),
     cost_fixed: parseFr(rawFixedCost),
+    name: `Import automatique`, // Optionnel
   };
 }
 
 async function importCostRow(row: CsvRow3, index: number): Promise<ImportRowResult> {
-  const ref = normalizeRef(getCsvValue(row, ["Num_Ticket", "Ref_Ticket", "RefTicket"]));
+  const ref = normalizeRef(getCsvValue(row, ["num_ticket", "Num_Ticket", "Ref_Ticket", "RefTicket"]));
 
   const result: ImportRowResult = {
     row: index + 1,
@@ -39,18 +48,17 @@ async function importCostRow(row: CsvRow3, index: number): Promise<ImportRowResu
       return result;
     }
 
-    const payload = buildCostPayload(ticketId, row);
-    const res = await glpiPostV1<{ id: number }>(
-      "TicketCost",
-      {
-        input: [payload]
-      }
+    const payload = buildCostPayload(row);
+    
+    const res = await glpiPost<{ id: number }>(
+      `Assistance/Ticket/${ticketId}/Cost`,
+      payload
     );
 
     result.status = "success";
-    result.glpiId = res.id;
+    result.glpiId = res?.id;
     result.message =
-      `Coût créé → GLPI #${res.id} | ` +
+      `Coût créé → GLPI V2 | ` +
       `Ticket #${ticketId} | ` +
       `Durée: ${payload.duration}s | ` +
       `Temps: ${payload.cost_time} | ` +

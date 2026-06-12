@@ -16,9 +16,9 @@ export function getCsvValue(row: any, keys: string[]): string {
 
   const rowKeys = Object.keys(row);
   for (const k of keys) {
-    const target = k.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const target = k.toLowerCase().replace(/[^a-z0-9_]/g, ""); 
     for (const rk of rowKeys) {
-      if (rk.toLowerCase().replace(/[^a-z0-9]/g, "") === target) {
+      if (rk.toLowerCase().replace(/[^a-z0-9_]/g, "") === target) {
         return String(row[rk]).trim();
       }
     }
