@@ -20,7 +20,6 @@ export function CostsPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [linkedItems, setLinkedItems] = useState<any[]>([]);
 
   useEffect(() => { load(); }, []);
   
