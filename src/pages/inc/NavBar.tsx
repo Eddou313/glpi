@@ -7,6 +7,7 @@ import './nav.css';
 const NAV_LINKS = [
   { to: '/Dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
   { to: '/tickets',   label: 'Tickets',          icon: Ticket          },
+  { to: '/CostsTickets',   label: 'Cout Tickets',          icon: Ticket          },
   { to: '/import',    label: 'Import',            icon: FileInput       },
   { to: '/Parameter',    label: 'Paramettre',            icon: Settings       },
   { to: '/Costs',    label: 'Costs',            icon: Settings       },
