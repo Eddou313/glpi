@@ -23,5 +23,16 @@ db.exec(
   (6,'terminer','vita','#bb8900');
 `
 );
+
+db.exec(
+`
+  CREATE TABLE cost (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticket_id INTEGER NOT NULL UNIQUE, 
+    cost REAL NOT NULL DEFAULT 0, 
+    nbr_elements INTEGER NOT NULL DEFAULT 1       
+  );
+`
+);
 console.log("creation fait !");
 process.exit(0);

@@ -5,6 +5,7 @@ import { useCategory } from "../../../hooks/category/useCategory";
 import type { GlpiAsset } from "../../../types/elements/items.types";
 import './TicketKanban.css';
 import { LANGUE } from '../../../types/parameter/parameter';
+import { useConsts } from '../../../hooks/costs/useCosts';
 
 export function TicketKanban() {
     const { allTickets, statusUtiliser, Parameters, loading, error } = useTicketKanban();
@@ -13,6 +14,9 @@ export function TicketKanban() {
     const { categories } = useCategory();
 
     const [localTickets, setLocalTickets] = useState<any[]>([]);
+
+    const {upsert: upsert} = useConsts();
+    const [prixCloture,setPrixCloture] = useState<string>("")
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [currentColumnStatusId, setCurrentColumnStatusId] = useState<number | null>(null);
@@ -90,6 +94,20 @@ export function TicketKanban() {
             setSelectedTicket(ticket);
             setPendingStatusId(targetStatusId);
             setIsClosed(true);
+
+            setLinkedItems([]);
+            setLoadingItems(true);
+            try{
+                const relations = await TicketServiceFront.getLinkedItems(ticket.id);
+                if(Array.isArray(relations))
+                {
+                    setLinkedItems(relations);
+                }
+            }
+            catch(error : any)
+            {
+                setLoadingItems(false);
+            }
             return;
         }
         await proceedStatusUpdate(ticket, targetStatusId);
@@ -424,6 +442,13 @@ export function TicketKanban() {
                                 placeholder="Entrez obligatoirement la solution ou le commentaire de clôture..."
                                 style={{ resize: 'vertical', minHeight: '100px', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
                             />
+                            {/* cost */}
+                            <label htmlFor="">couts</label>
+                            <input type="number" 
+                            name="" id=""
+                            min={0} 
+                            onChange={(e)=>setPrixCloture(e.target.value)}/>
+                        
                         </div>
                         <div className="modal-actions" style={{ marginTop: '15px' }}>
                             <button
@@ -446,8 +471,18 @@ export function TicketKanban() {
                                     if (!commentaire.trim()) {
                                         return alert("Le commentaire de clôture est obligatoire.");
                                     }
+                                    if (!prixCloture) {
+                                        return alert("Le prix de clotu.");
+                                    }
                                     if (pendingStatusId !== null) {
                                         await proceedStatusUpdate(selectedTicket, pendingStatusId, commentaire.trim());
+                                        const nbE = linkedItems.length>0 ? linkedItems.length : 1;
+                                        console.log("element associer : "+nbE);
+                                        try {
+                                            await upsert(selectedTicket.id,Number(prixCloture),Number(nbE));
+                                        } catch (error) {
+                                            
+                                        }
                                     }
                                     setIsClosed(false);
                                     setSelectedTicket(null);

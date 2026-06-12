@@ -1,0 +1,30 @@
+.costs-page { padding: 24px; max-width: 1100px; margin: 0 auto; font-family: 'Segoe UI', sans-serif; }
+.costs-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.costs-header h2 { font-size: 1.4rem; font-weight: 700; color: #1e293b; margin: 0; }
+.costs-refresh-btn { padding: 8px 18px; border: none; border-radius: 6px; background: #3b82f6; color: #fff; font-size: 0.9rem; cursor: pointer; }
+.costs-refresh-btn:hover:not(:disabled) { background: #2563eb; }
+.costs-refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.costs-error { background: #fee2e2; color: #b91c1c; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
+.costs-loading, .costs-empty { text-align: center; padding: 60px 0; color: #94a3b8; }
+.costs-table-wrapper { overflow-x: auto; border-radius: 10px; box-shadow: 0 1px 8px rgba(0,0,0,.08); }
+.costs-table { width: 100%; border-collapse: collapse; background: #fff; }
+.costs-table thead th { background: #1e293b; color: #f1f5f9; padding: 12px 16px; font-size: 0.82rem; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; text-align: left; white-space: nowrap; }
+.costs-table tbody tr { border-bottom: 1px solid #f1f5f9; }
+.costs-table tbody tr:hover { background: #f8fafc; }
+.costs-table td { padding: 11px 16px; font-size: 0.9rem; color: #334155; }
+.costs-id { font-weight: 600; color: #6366f1; }
+.costs-name { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.costs-num { text-align: right; font-variant-numeric: tabular-nums; }
+.costs-center { text-align: center; }
+.costs-kanban { color: #0369a1; font-weight: 500; }
+.costs-per { color: #059669; font-weight: 500; }
+.costs-total { color: #7c3aed; font-weight: 700; }
+.costs-foot td { background: #f8fafc; padding: 12px 16px; border-top: 2px solid #e2e8f0; }
+.costs-summary { display: flex; gap: 16px; margin-top: 24px; flex-wrap: wrap; }
+.costs-summary__card { flex: 1; min-width: 180px; background: #fff; border-radius: 10px; padding: 18px 20px; box-shadow: 0 1px 6px rgba(0,0,0,.07); display: flex; flex-direction: column; gap: 6px; border-left: 4px solid #94a3b8; }
+.costs-summary__card span { font-size: 0.82rem; color: #64748b; font-weight: 500; }
+.costs-summary__card strong { font-size: 1.25rem; color: #1e293b; }
+.costs-summary__card--kanban { border-left-color: #0369a1; }
+.costs-summary__card--kanban strong { color: #0369a1; }
+.costs-summary__card--total { border-left-color: #7c3aed; }
+.costs-summary__card--total strong { color: #7c3aed; }

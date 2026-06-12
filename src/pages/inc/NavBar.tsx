@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { to: '/tickets',   label: 'Tickets',          icon: Ticket          },
   { to: '/import',    label: 'Import',            icon: FileInput       },
   { to: '/Parameter',    label: 'Paramettre',            icon: Settings       },
+  { to: '/Costs',    label: 'Costs',            icon: Settings       },
 ];
 
 export function Navbar() {

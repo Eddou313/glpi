@@ -3,6 +3,7 @@ import cors from 'cors';
 import statusRoutes from './routes/status.routes.js'; // .js obligatoire
 import userRoutes from './routes/users.routes.js'; // .js obligatoire
 import parameterRoutes from './routes/parameter.routes.ts';
+import costRoutes from './routes/cost.routes.ts';
 
 const app = express();
 
@@ -14,5 +15,6 @@ app.use(express.json());
 app.use('/api', statusRoutes);
 app.use('/api/users',userRoutes);
 app.use('/api/Parameter',parameterRoutes);
+app.use('/api/Cost',costRoutes);
 
 export default app;

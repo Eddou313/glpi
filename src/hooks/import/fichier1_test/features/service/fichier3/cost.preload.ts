@@ -40,8 +40,9 @@ export function analyzeRows3(rows: CsvRow3[]): AnalyzeResult {
 
   for (const row of rows) {
     const ref = normalizeRef(
-      row.Ref_Ticket ?? (row as any).RefTicket ?? (row as any).Num_Ticket
+      getCsvValue(row, ["Num_Ticket", "Ref_Ticket", "RefTicket"])
     );
+    
     if (importCache.ticket.has(ref)) {
       resolvable++;
     } else {
@@ -55,6 +56,6 @@ export function analyzeRows3(rows: CsvRow3[]): AnalyzeResult {
     missing: [...missing],
   };
 
-  console.log(`[Fichier3] ${rows.length} lignes | ` +`${resolvable} résolvables | ` + `${missing.size} ticket(s) introuvable(s)` +(missing.size ? ` : ${[...missing].join(", ")}` : ""));
+  console.log(`[Fichier3] ${rows.length} lignes | ` + `${resolvable} résolvables | ` + `${missing.size} ticket(s) introuvable(s)`);
   return result;
 }
