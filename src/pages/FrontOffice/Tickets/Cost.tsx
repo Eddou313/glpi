@@ -10,16 +10,20 @@ interface Row {
   nb_elements: number;
   cost_per_element: number;
   total: number;
+  items?: string[]
 }
+
+
 
 export function CostsPage() {
   const { getAll } = useConsts();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [linkedItems, setLinkedItems] = useState<any[]>([]);
 
   useEffect(() => { load(); }, []);
-
+  
   const load = async () => {
     setLoading(true);
     setError(null);
@@ -45,12 +49,18 @@ export function CostsPage() {
               : (response && Array.isArray(response.results) ? response.results : []);
 
             if (costsArray.length > 0) {
-              const dernierCout = costsArray[costsArray.length - 1];
-              console.log(`Ticket #${kc.ticket_id} - Dernier coût fixe :`, dernierCout.cost_fixed ?? dernierCout.cost ?? 0);
               glpi_cost = costsArray.reduce((sum: number, c: any) => {
-                const valeurCout = c.cost_fixed !== undefined ? c.cost_fixed : (c.cost || 0);
-                return sum + (Number(valeurCout) || 0);
+                const fixe = Number(c.cost_fixed) || 0;
+                const materiel = Number(c.cost_material) || 0;
+                const tauxHoraire = Number(c.cost_time) || 0; 
+                const dureeSecondes = Number(c.duration) || 0;
+
+                const coutTemps = (dureeSecondes / 3600) * tauxHoraire;
+                const totalLigneCout = fixe + materiel + coutTemps;
+                return sum + totalLigneCout;
               }, 0);
+
+              console.log(`Ticket #${kc.ticket_id} - Coût Total cumulé GLPI (Calculé) :`, glpi_cost);
             } else {
               console.log(`Ticket #${kc.ticket_id} - Aucun coût trouvé sur GLPI.`);
               glpi_cost = 0;
@@ -141,7 +151,7 @@ export function CostsPage() {
             </table>
           </div>
 
-          <div className="costs-summary">
+          {/* <div className="costs-summary">
             <div className="costs-summary__card">
               <span>Coût GLPI total</span>
               <strong>{fmt(totalGlpi)}</strong>
@@ -154,7 +164,7 @@ export function CostsPage() {
               <span>Grand total</span>
               <strong>{fmt(totalAll)}</strong>
             </div>
-          </div>
+          </div> */}
         </>
       )}
     </div>
