@@ -51,3 +51,9 @@ export const upsterConst = (req: Request, res: Response) => {
         res.status(500).json({ error: error.message });
     }
 };
+export const deleteCost = (req: Request, res: Response) => {
+  const ticketId = Number(req.params.ticket_id);
+  const info = db.prepare('DELETE FROM cost WHERE ticket_id = ?').run(ticketId);
+  if (info.changes === 0) return res.status(404).json({ error: 'Coût non trouvé' });
+  res.status(204).send();
+};
