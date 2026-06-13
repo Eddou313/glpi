@@ -10,11 +10,10 @@ interface Row {
   nb_elements: number;
   cost_per_element: number;
   total: number;
-  items?: string[]
+  items?: string[];
+  status: boolean,
+  reouvert: number
 }
-
-
-
 export function CostsPage() {
   const { getAll } = useConsts();
   const [rows, setRows] = useState<Row[]>([]);
@@ -22,7 +21,7 @@ export function CostsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => { load(); }, []);
-  
+
   const load = async () => {
     setLoading(true);
     setError(null);
@@ -51,7 +50,7 @@ export function CostsPage() {
               glpi_cost = costsArray.reduce((sum: number, c: any) => {
                 const fixe = Number(c.cost_fixed) || 0;
                 const materiel = Number(c.cost_material) || 0;
-                const tauxHoraire = Number(c.cost_time) || 0; 
+                const tauxHoraire = Number(c.cost_time) || 0;
                 const dureeSecondes = Number(c.duration) || 0;
 
                 const coutTemps = (dureeSecondes / 3600) * tauxHoraire;
@@ -67,15 +66,21 @@ export function CostsPage() {
           } catch (err) {
             console.warn(`Impossible de récupérer les coûts du ticket #${kc.ticket_id} via l'API v2`);
           }
+          let kanban_cost = kc.cost;
+          if (kc.status === true) {
+            kanban_cost = 0;
+          }
 
           return {
             ticket_id: kc.ticket_id,
             ticket_name,
             glpi_cost,
-            kanban_cost: kc.cost,
+            kanban_cost: kanban_cost,
             nb_elements: kc.nbr_elements,
-            cost_per_element: kc.nbr_elements > 0 ? kc.cost / kc.nbr_elements : kc.cost,
-            total: glpi_cost + kc.cost,
+            cost_per_element: kc.nbr_elements > 0 ? kanban_cost / kc.nbr_elements : kanban_cost,
+            total: glpi_cost +kanban_cost,
+            status: kc.status,
+            reouvert: kc.cost_reoverture
           };
         })
       );
@@ -118,6 +123,8 @@ export function CostsPage() {
                   <th>#Ticket</th>
                   <th>Titre</th>
                   <th>Coût GLPI</th>
+                  <th>Cout ouverture</th>
+                  <th>Status</th>
                   <th>Coût Kanban</th>
                   <th>Nb éléments</th>
                   <th>Coût / élément</th>
@@ -130,6 +137,10 @@ export function CostsPage() {
                     <td className="costs-id">#{r.ticket_id}</td>
                     <td className="costs-name">{r.ticket_name}</td>
                     <td className="costs-num">{fmt(r.glpi_cost)}</td>
+                    {/* <td></td> */}
+                    {/* <td></td> */}
+                    <td className="costs-name">{fmt(r.reouvert)}</td>
+                    <td className="costs-name">{r.status}</td>
                     <td className="costs-num costs-kanban">{fmt(r.kanban_cost)}</td>
                     <td className="costs-center">{r.nb_elements}</td>
                     <td className="costs-num costs-per">{fmt(r.cost_per_element)}</td>
@@ -141,6 +152,9 @@ export function CostsPage() {
                 <tr className="costs-foot">
                   <td colSpan={2}><strong>TOTAL</strong></td>
                   <td className="costs-num"><strong>{fmt(totalGlpi)}</strong></td>
+
+                  <td></td>
+                  <td></td>
                   <td className="costs-num costs-kanban"><strong>{fmt(totalKanban)}</strong></td>
                   <td></td>
                   <td className="costs-num costs-total"><strong>{fmt(totalElement)}</strong></td>

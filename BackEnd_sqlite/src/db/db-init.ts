@@ -28,9 +28,11 @@ db.exec(
 `
   CREATE TABLE cost (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    ticket_id INTEGER NOT NULL UNIQUE, 
+    ticket_id INTEGER NOT NULL, 
     cost REAL NOT NULL DEFAULT 0, 
-    nbr_elements INTEGER NOT NULL DEFAULT 1       
+    nbr_elements INTEGER NOT NULL DEFAULT 1,
+    status boolean DEFAULT false,
+    cost_reoverture REAL NOT NULL DEFAULT 0       
   );
 `
 );

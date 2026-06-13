@@ -3,7 +3,7 @@ import db from '../db/db.ts';
 
 export const getAllCost = (req: Request, res: Response) => {
     try {
-        const statuses = db.prepare('SELECT id, ticket_id, cost, nbr_elements FROM cost').all();
+        const statuses = db.prepare('SELECT id, ticket_id, cost, nbr_elements,status,cost_reoverture FROM cost').all();
         res.json(statuses);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -12,9 +12,9 @@ export const getAllCost = (req: Request, res: Response) => {
 
 export const getCostTickets = (req: Request, res: Response) => {
     // Sécurité : cherche 'id' ou 'ticket_id' selon comment Express l'interprète
-    const id = Number(req.params.id || req.params.ticket_id);
+    const id = Number(req.params.ticket_id);
     try {
-        const statuses = db.prepare('SELECT * FROM cost WHERE ticket_id = ?').get(id);
+        const statuses = db.prepare('SELECT * FROM cost WHERE ticket_id = ? ORDER DESC limit 1').get(id);
         res.json(statuses);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -51,9 +51,23 @@ export const upsterConst = (req: Request, res: Response) => {
         res.status(500).json({ error: error.message });
     }
 };
+
 export const deleteCost = (req: Request, res: Response) => {
-  const ticketId = Number(req.params.ticket_id);
-  const info = db.prepare('DELETE FROM cost WHERE ticket_id = ?').run(ticketId);
+  const Id = Number(req.params.id);
+  const info = db.prepare('UPDATE cost SET status = true WHERE ticket_id = ?').run(Id);
   if (info.changes === 0) return res.status(404).json({ error: 'Coût non trouvé' });
   res.status(204).send();
+};
+
+export const reouvert = (req: Request, res: Response) => {
+    try {
+        const id = Number(req.params.ticket_id);
+        const {idT , cost_reoverture } = req.body;
+        // const valeur = Number(cost_reoverture) / Number(costDerinier) * 100;
+        db.prepare('UPDATE cost SET status=true , cost_reoverture = ? WHERE ticket_id = ?').run(cost_reoverture, id);
+        const rep = db.prepare('SELECT * FROM cost WHERE ticket_id = ?').get(id);
+        res.json(rep);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
 };

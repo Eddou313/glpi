@@ -15,8 +15,8 @@ export function TicketKanban() {
 
     const [localTickets, setLocalTickets] = useState<any[]>([]);
 
-    const {upsert: upsert} = useConsts();
-    const [prixCloture,setPrixCloture] = useState<string>("")
+    const { getByTickets, upsert: upsert, Remove, Reouvre } = useConsts();
+    const [prixCloture, setPrixCloture] = useState<string>("")
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [currentColumnStatusId, setCurrentColumnStatusId] = useState<number | null>(null);
@@ -39,6 +39,10 @@ export function TicketKanban() {
 
     const [linkedItems, setLinkedItems] = useState<any[]>([]);
     const [loadingItems, setLoadingItems] = useState(false);
+
+    const [reouvre, setReouvre] = useState(false);
+    const [reouvre2, setReouvre2] = useState(false);
+    const [pourcentage, setPourcentage] = useState<number>(0);
 
     const getStatusTranslation = (statusId: number | undefined, defaultFallback: string = "") => {
         if (!statusId) return defaultFallback;
@@ -97,19 +101,34 @@ export function TicketKanban() {
 
             setLinkedItems([]);
             setLoadingItems(true);
-            try{
+            try {
                 const relations = await TicketServiceFront.getLinkedItems(ticket.id);
-                if(Array.isArray(relations))
-                {
+                if (Array.isArray(relations)) {
                     setLinkedItems(relations);
                 }
             }
-            catch(error : any)
-            {
+            catch (error: any) {
                 setLoadingItems(false);
             }
             return;
         }
+
+        if (targetStatusId == 2) {
+            setSelectedTicket(ticket);
+            setPendingStatusId(targetStatusId);
+            setReouvre(true);
+
+            setLinkedItems([]);
+            setLoadingItems(true);
+            try {
+
+            }
+            catch (error: any) {
+                setLoadingItems(false);
+            }
+            return;
+        }
+
         await proceedStatusUpdate(ticket, targetStatusId);
     };
     const proceedStatusUpdate = async (ticket: any, targetStatusId: number, commentaire?: string) => {
@@ -131,7 +150,7 @@ export function TicketKanban() {
         );
 
         try {
-            await TicketServiceFront.updateStatus(ticket.id, targetStatusId,commentaire);
+            await TicketServiceFront.updateStatus(ticket.id, targetStatusId, commentaire);
             alert("Ticket modifié avec succès");
         } catch (err: any) {
             alert("Erreur lors de la mise à jour du statut : " + err.message);
@@ -444,11 +463,11 @@ export function TicketKanban() {
                             />
                             {/* cost */}
                             <label htmlFor="">couts</label>
-                            <input type="number" 
-                            name="" id=""
-                            min={0} 
-                            onChange={(e)=>setPrixCloture(e.target.value)}/>
-                        
+                            <input type="number"
+                                name="" id=""
+                                min={0}
+                                onChange={(e) => setPrixCloture(e.target.value)} />
+
                         </div>
                         <div className="modal-actions" style={{ marginTop: '15px' }}>
                             <button
@@ -476,15 +495,74 @@ export function TicketKanban() {
                                     }
                                     if (pendingStatusId !== null) {
                                         await proceedStatusUpdate(selectedTicket, pendingStatusId, commentaire.trim());
-                                        const nbE = linkedItems.length>0 ? linkedItems.length : 1;
-                                        console.log("element associer : "+nbE);
+                                        const nbE = linkedItems.length > 0 ? linkedItems.length : 1;
+                                        console.log("element associer : " + nbE);
                                         try {
-                                            await upsert(selectedTicket.id,Number(prixCloture),Number(nbE));
+                                            await upsert(selectedTicket.id, Number(prixCloture), Number(nbE));
                                         } catch (error) {
-                                            
+
                                         }
                                     }
                                     setIsClosed(false);
+                                    setSelectedTicket(null);
+                                    setPendingStatusId(null);
+                                    setCommentaire("");
+                                }}
+                            >
+                                Valider et Clôturer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 3. reouverture */}
+            {reouvre && selectedTicket && (
+                <div className="modal-overlay">
+                    <div className="modal-box detail-modal">
+                        <div>
+                            <h1>Reouverture</h1>
+                            <label htmlFor="a">Pourcentage</label>
+                            <input type="number" name="" id="" defaultValue={0} onChange={(e) => setPourcentage(Number(e.target.value))} />
+                        </div>
+                        <div className="modal-actions" style={{ marginTop: '15px' }}>
+                            <button
+                                type="button"
+                                className="btn-secondary"
+                                onClick={async () => {
+                                    setIsClosed(false);
+                                    setSelectedTicket(null);
+                                    setPendingStatusId(null);
+                                    setCommentaire("");
+                                    setReouvre(false);
+                                }}
+                            >X</button>
+                            <button
+                                type="button"
+                                className="btn-secondary"
+                                onClick={async () => {
+                                    await Remove(selectedTicket.id);
+                                    await proceedStatusUpdate(selectedTicket, 2);
+                                    setIsClosed(false);
+                                    setReouvre(false);
+                                    setSelectedTicket(null);
+                                    setPendingStatusId(null);
+                                    setCommentaire("");
+
+                                }}
+                            >
+                                Annuler
+                            </button>
+                            <button
+                                type="button"
+                                className="ticket-form__submit"
+                                style={{ backgroundColor: '#22c55e', color: 'white' }}
+                                onClick={async () => {
+                                    // const lastCost = await getByTickets(selectedTicket.id);
+                                    await Reouvre(selectedTicket.id,pourcentage);
+                                    await proceedStatusUpdate(selectedTicket, 2);
+                                    setIsClosed(false);
+                                    setReouvre(false);
                                     setSelectedTicket(null);
                                     setPendingStatusId(null);
                                     setCommentaire("");
