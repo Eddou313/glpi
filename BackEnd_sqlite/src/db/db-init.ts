@@ -30,9 +30,9 @@ db.exec(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ticket_id INTEGER NOT NULL, 
     cost REAL NOT NULL DEFAULT 0, 
-    nbr_elements INTEGER NOT NULL DEFAULT 1,
-    status boolean DEFAULT false,
-    cost_reoverture REAL NOT NULL DEFAULT 0       
+    id_items INTEGER,
+    category String,
+    type_cout String      
   );
 `
 );
