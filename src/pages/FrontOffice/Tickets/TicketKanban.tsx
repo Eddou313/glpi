@@ -6,7 +6,7 @@ import type { GlpiAsset } from "../../../types/elements/items.types";
 import './TicketKanban.css';
 import { LANGUE } from '../../../types/parameter/parameter';
 import { type_cout_mapping, useConsts } from '../../../hooks/costs/useCosts';
-import { useCostTicketsGLPI } from '../../../hooks/costs/useCostTicketsGLPI';
+// import { useCostTicketsGLPI } from '../../../hooks/costs/useCostTicketsGLPI';
 
 export function TicketKanban() {
     const { allTickets, statusUtiliser, Parameters, loading, error } = useTicketKanban();
@@ -16,9 +16,9 @@ export function TicketKanban() {
 
     const [localTickets, setLocalTickets] = useState<any[]>([]);
 
-    const { upsert: upsert, Remove, Reouvre } = useConsts();
+    const { getByTickets, upsert: upsert, Remove, Reouvre, getIsDeleted, RemoveForce } = useConsts();
     const [prixCloture, setPrixCloture] = useState<string>("");
-    const { getCostByTickets } = useCostTicketsGLPI();
+    // const { getCostByTickets } = useCostTicketsGLPI();
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [currentColumnStatusId, setCurrentColumnStatusId] = useState<number | null>(null);
@@ -98,6 +98,20 @@ export function TicketKanban() {
             setSelectedTicket(ticket);
             setPendingStatusId(targetStatusId);
             setReouvre(true);
+            setLinkedItems([]);
+            setLoadingItems(true);
+            try {
+                const relations = await TicketServiceFront.getLinkedItems(ticket.id);
+
+                if (Array.isArray(relations)) {
+                    setLinkedItems(relations);
+                    console.log("Relations réouverture :", relations);
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoadingItems(false);
+            }
             return;
         }
         if (targetStatusId >= 5) {
@@ -541,6 +555,8 @@ export function TicketKanban() {
                                 className="btn-secondary"
                                 onClick={async () => {
                                     await Remove(selectedTicket.id, type_cout_mapping.SUPER_COST);
+                                    await RemoveForce(selectedTicket.id, type_cout_mapping.SUPER_COST);
+                                    await RemoveForce(selectedTicket.id, type_cout_mapping.OUVERTURE);
                                     await proceedStatusUpdate(selectedTicket, 2);
                                     setIsClosed(false);
                                     setReouvre(false);
@@ -558,21 +574,24 @@ export function TicketKanban() {
                                 onClick={async () => {
                                     if (pendingStatusId !== null) {
                                         try {
-                                            const reelGLPI = await getCostByTickets(selectedTicket.id);
-                                            const coutInitial = reelGLPI ? (Number(reelGLPI.cost_Total) || 0) : 0;
+                                            // const reelGLPI = await getCostByTickets(selectedTicket.id);
+                                            const dernierSuperCost = await getByTickets(selectedTicket.id, type_cout_mapping.SUPER_COST);
+                                            const coutInitial = dernierSuperCost ? (Number(dernierSuperCost.cost) || 0) : 0;
                                             const reel = (Number(pourcentage) * coutInitial) / 100;
+                                            console.log("cout reel :", reel);
                                             const totalItems = linkedItems.length > 0 ? linkedItems.length : 1;
                                             const prixParItems = reel / totalItems;
                                             if (linkedItems.length > 0) {
                                                 for (const item of linkedItems) {
-                                                    await upsert(selectedTicket.id,prixParItems,type_cout_mapping.OUVERTURE,item.itemtype,item.items_id);
+                                                    await upsert(selectedTicket.id, prixParItems, type_cout_mapping.OUVERTURE, item.itemtype, item.items_id);
                                                 }
                                             } else {
-                                                await upsert(selectedTicket.id,reel,type_cout_mapping.OUVERTURE,"Réouverture globale",null);
+                                                await upsert(selectedTicket.id, reel, type_cout_mapping.OUVERTURE, "Réouverture globale", null);
                                             }
                                         } catch (error: any) {
                                             console.error("Erreur lors de l'application des coûts de réouverture :", error.message);
                                         } finally {
+                                            await RemoveForce(selectedTicket.id, type_cout_mapping.SUPER_COST);
                                             await proceedStatusUpdate(selectedTicket, pendingStatusId, "Ticket réouvert avec application du pourcentage.");
                                             setIsClosed(false);
                                             setReouvre(false);

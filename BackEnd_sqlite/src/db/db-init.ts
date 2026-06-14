@@ -32,7 +32,8 @@ db.exec(
     cost REAL NOT NULL DEFAULT 0, 
     id_items INTEGER,
     category String,
-    type_cout INTEGER NOT NULL   
+    type_cout INTEGER NOT NULL,
+    is_deleted BOOLEAN DEFAULT false   
   );
 `
 );

@@ -12,13 +12,13 @@ export const getAllCost = (req: Request, res: Response) => {
 
 export const getCostTickets = (req: Request, res: Response) => { 
     const ticket_id = Number(req.params.ticket_id);
-    const type_cout = Number(req.body.type_cout);
+    const type_cout = Number(req.query.type_cout);
     try {
         if (isNaN(ticket_id) || isNaN(type_cout)) {
             return res.status(400).json({ error: "L'identifiant du ticket ou le type de coût est invalide." });
         }
-        const cost = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ? ORDER BY id DESC LIMIT 1').get(ticket_id, type_cout);
-        res.json(cost || { message: "Aucun coût trouvé pour ce ticket avec ce type." });
+        const cost = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ? ').all(ticket_id, type_cout);
+        res.json(cost || []);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
@@ -39,7 +39,7 @@ export const upsterConst = (req: Request, res: Response) => {
         const itemId = id_items ? parseInt(id_items, 10) : null;
         const cat = category || null;
         
-        const existingCost = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ?').get(id, typeCoutId);
+        const existingCost = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ? AND id_items =?').get(id, typeCoutId,id_items);
 
         if (existingCost) {
             db.prepare(`
@@ -69,9 +69,39 @@ export const deleteCost = (req: Request, res: Response) => {
         if (isNaN(id) || isNaN(type_cout)) {
             return res.status(400).json({ error: "ID ou type de coût invalide." });
         }
-
-        const info = db.prepare('DELETE FROM cost WHERE ticket_id = ? ').run(id);
+        // const info = db.prepare('DELETE FROM cost WHERE ticket_id = ? ').run(id);
+        const info = db.prepare('UPDATE cost SET is_deleted = true WHERE ticket_id= ? AND type_cout = ?').run(id,type_cout);
         
+        if (info.changes === 0) {
+            return res.status(404).json({ error: `Coût avec le type ID ${type_cout} non trouvé pour ce ticket.` });
+        }
+        
+        res.status(204).send();
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+export const getIsDelete = (req: Request, res: Response) => { 
+    const ticket_id = Number(req.params.ticket_id);
+    const type_cout = Number(req.body.type_cout);
+    try {
+        if (isNaN(ticket_id) || isNaN(type_cout)) {
+            return res.status(400).json({ error: "L'identifiant du ticket ou le type de coût est invalide." });
+        }
+        const cost = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ? AND is_deleted = true ORDER BY id DESC LIMIT 1').get(ticket_id, type_cout);
+        res.json(cost || { message: "Aucun coût trouvé pour ce ticket avec ce type." });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+export const deleteCostForce = (req: Request, res: Response) => { 
+    try {
+        const id = Number(req.params.ticket_id);
+        const type_cout = Number(req.body.type_cout); 
+        if (isNaN(id) || isNaN(type_cout)) {
+            return res.status(400).json({ error: "ID ou type de coût invalide." });
+        }
+        const info = db.prepare('DELETE FROM cost WHERE ticket_id = ? AND type_cout = ?').run(id,type_cout);
         if (info.changes === 0) {
             return res.status(404).json({ error: `Coût avec le type ID ${type_cout} non trouvé pour ce ticket.` });
         }
