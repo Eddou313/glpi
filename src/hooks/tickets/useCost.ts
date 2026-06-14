@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { glpiGet } from "../../api/db_glpi";
-import { useCostTicketsGLPI, type TicketsCostReel } from "../costs/useCostTicketsGLPI";
+import { useCostTicketsGLPI } from "../costs/useCostTicketsGLPI";
 
 export interface GlpiTicketBase {
   id: number;
