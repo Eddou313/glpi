@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import {LayoutDashboard,Ticket,FileInput,LogOut,ChevronLeft,ChevronRight,Settings} from 'lucide-react';
+import {LayoutDashboard,Ticket,FileInput,LogOut,ChevronLeft,ChevronRight,Settings,Coins} from 'lucide-react';
 import { invalidateGLPIToken } from '../../api/db_glpi';
 import './nav.css';
 
@@ -10,7 +10,7 @@ const NAV_LINKS = [
   { to: '/CostsTickets',   label: 'Cout Tickets',          icon: Ticket          },
   { to: '/import',    label: 'Import',            icon: FileInput       },
   { to: '/Parameter',    label: 'Paramettre',            icon: Settings       },
-  { to: '/Costs',    label: 'Costs',            icon: Settings       },
+  { to: '/Costs',    label: 'Costs',            icon: Coins       },
 ];
 
 export function Navbar() {

@@ -3,8 +3,8 @@ import { deleteCost, getAllCost, getCostTickets, upsterConst } from '../controll
 const router = Router();
 
 router.get('/', getAllCost);
-router.get('/:id', getCostTickets);
-router.post('/:id', upsterConst);
-router.delete('/:id', deleteCost);
+router.get('/:ticket_id', getCostTickets);
+router.post('/:ticket_id', upsterConst);
+router.delete('/:ticket_id', deleteCost);
 // router.post("/ouvre/:id",reouvert);
 export default router;
