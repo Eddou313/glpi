@@ -13,7 +13,6 @@ import { FrontOfficeLayout } from "../pages/inc/layout"
 import Imports from "../hooks/import/fichier1_test/features/import1"
 import { ParameterPages } from "../pages/parameter/ParameterPages"
 import TicketKanban from "../pages/FrontOffice/Tickets/TicketKanban"
-import { CostsPage } from "../pages/FrontOffice/Tickets/Cost"
 import GlpiTicketsCostsPage from "../pages/tickets/ConstTickets"
 import { Cost } from "../pages/tickets/Cost"
 
@@ -32,7 +31,7 @@ function AppRouter() {
           <Route path="/tickets" element={<TicketsPage />} />
           <Route path="/Dashboard" element={<DashboardPage />} />
           <Route path="/Parameter" element={<ParameterPages />} />
-          <Route path="/Costs" element={<CostsPage />} />
+          {/* <Route path="/Costs" element={<CostsPage />} /> */}
           <Route path="/CostsTickets" element={<GlpiTicketsCostsPage />} />
         </Route>
         {/* frontoffice */}

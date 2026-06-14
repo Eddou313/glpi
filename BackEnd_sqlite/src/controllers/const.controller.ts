@@ -70,7 +70,7 @@ export const deleteCost = (req: Request, res: Response) => {
             return res.status(400).json({ error: "ID ou type de coût invalide." });
         }
 
-        const info = db.prepare('DELETE FROM cost WHERE ticket_id = ? AND type_cout = ?').run(id, type_cout);
+        const info = db.prepare('DELETE FROM cost WHERE ticket_id = ? ').run(id);
         
         if (info.changes === 0) {
             return res.status(404).json({ error: `Coût avec le type ID ${type_cout} non trouvé pour ce ticket.` });

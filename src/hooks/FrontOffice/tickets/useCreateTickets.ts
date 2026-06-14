@@ -5,7 +5,19 @@ import { glpiGetV1, glpiPostV1, glpiPutV1 } from "../../../api/db_glpi";
 import type { GlpiAsset } from "../../../types/elements/items.types";
 import { TICKET_STATUS, type Parameter } from "../../../types/parameter/parameter";
 import { useParameter } from "../../parameter/useParameter";
-
+export interface LinkedItems 
+{
+  id : number;
+  itemtype: string,
+  items_id: number,
+  tickets_id: number,
+  links: [
+    {
+      rel: string,
+      href: string
+    }
+  ]
+}
 export const TicketServiceFront = {
   create: (body: CreateTicketRequest) =>
     glpiPost<{ id: number }>(
@@ -82,7 +94,7 @@ export const TicketServiceFront = {
     );
   },
   getLinkedItems: (ticketId: number) =>
-    glpiGetV1<any[]>(`Ticket/${ticketId}/Item_Ticket`),
+    glpiGetV1<LinkedItems[]>(`Ticket/${ticketId}/Item_Ticket`),
 };
 
 

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useTicketKanban, useCreateTicket, TicketServiceFront } from "../../../hooks/FrontOffice/tickets/useCreateTickets";
+import { useTicketKanban, useCreateTicket, TicketServiceFront, type LinkedItems } from "../../../hooks/FrontOffice/tickets/useCreateTickets";
 import { useItems } from "../../../hooks/FrontOffice/elements/useItems";
 import { useCategory } from "../../../hooks/category/useCategory";
 import type { GlpiAsset } from "../../../types/elements/items.types";
 import './TicketKanban.css';
 import { LANGUE } from '../../../types/parameter/parameter';
-import { useConsts } from '../../../hooks/costs/useCosts';
+import { type_cout_mapping, useConsts } from '../../../hooks/costs/useCosts';
+import { useCostTicketsGLPI } from '../../../hooks/costs/useCostTicketsGLPI';
 
 export function TicketKanban() {
     const { allTickets, statusUtiliser, Parameters, loading, error } = useTicketKanban();
@@ -15,8 +16,9 @@ export function TicketKanban() {
 
     const [localTickets, setLocalTickets] = useState<any[]>([]);
 
-    const { getByTickets, upsert: upsert, Remove, Reouvre } = useConsts();
-    const [prixCloture, setPrixCloture] = useState<string>("")
+    const { upsert: upsert, Remove, Reouvre } = useConsts();
+    const [prixCloture, setPrixCloture] = useState<string>("");
+    const { getCostByTickets } = useCostTicketsGLPI();
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [currentColumnStatusId, setCurrentColumnStatusId] = useState<number | null>(null);
@@ -37,11 +39,10 @@ export function TicketKanban() {
     const [selectedTicket, setSelectedTicket] = useState<any>(null);
     const [langue, setLangue] = useState<number>(1);
 
-    const [linkedItems, setLinkedItems] = useState<any[]>([]);
+    const [linkedItems, setLinkedItems] = useState<LinkedItems[]>([]);
     const [loadingItems, setLoadingItems] = useState(false);
 
     const [reouvre, setReouvre] = useState(false);
-    const [reouvre2, setReouvre2] = useState(false);
     const [pourcentage, setPourcentage] = useState<number>(0);
 
     const getStatusTranslation = (statusId: number | undefined, defaultFallback: string = "") => {
@@ -75,7 +76,6 @@ export function TicketKanban() {
         );
     });
 
-    // Configuration dynamique des colonnes
     const paramsArray = Array.isArray(Parameters) ? Parameters : (Parameters ? [Parameters] : [] as any[]);
     const columns = paramsArray;
     // ── GESTION DU DRAG & DROP ──
@@ -94,6 +94,12 @@ export function TicketKanban() {
 
         if (!ticket || ticket.status?.id === targetStatusId) return;
 
+        if (ticket.status?.id >= 5 && targetStatusId === 2) {
+            setSelectedTicket(ticket);
+            setPendingStatusId(targetStatusId);
+            setReouvre(true);
+            return;
+        }
         if (targetStatusId >= 5) {
             setSelectedTicket(ticket);
             setPendingStatusId(targetStatusId);
@@ -105,6 +111,7 @@ export function TicketKanban() {
                 const relations = await TicketServiceFront.getLinkedItems(ticket.id);
                 if (Array.isArray(relations)) {
                     setLinkedItems(relations);
+                    // console.log("items :" + JSON.stringify(relations, null, 2))
                 }
             }
             catch (error: any) {
@@ -112,23 +119,6 @@ export function TicketKanban() {
             }
             return;
         }
-
-        if (targetStatusId == 2) {
-            setSelectedTicket(ticket);
-            setPendingStatusId(targetStatusId);
-            setReouvre(true);
-
-            setLinkedItems([]);
-            setLoadingItems(true);
-            try {
-
-            }
-            catch (error: any) {
-                setLoadingItems(false);
-            }
-            return;
-        }
-
         await proceedStatusUpdate(ticket, targetStatusId);
     };
     const proceedStatusUpdate = async (ticket: any, targetStatusId: number, commentaire?: string) => {
@@ -491,22 +481,31 @@ export function TicketKanban() {
                                         return alert("Le commentaire de clôture est obligatoire.");
                                     }
                                     if (!prixCloture) {
-                                        return alert("Le prix de clotu.");
+                                        return alert("Le prix de clôture est obligatoire.");
                                     }
                                     if (pendingStatusId !== null) {
-                                        await proceedStatusUpdate(selectedTicket, pendingStatusId, commentaire.trim());
-                                        const nbE = linkedItems.length > 0 ? linkedItems.length : 1;
-                                        console.log("element associer : " + nbE);
                                         try {
-                                            await upsert(selectedTicket.id, Number(prixCloture), Number(nbE));
-                                        } catch (error) {
-
+                                            const totalItems = linkedItems.length > 0 ? linkedItems.length : 1;
+                                            const prixParItems = Number(prixCloture) / totalItems;
+                                            if (linkedItems.length > 0) {
+                                                for (const item of linkedItems) {
+                                                    await upsert(selectedTicket.id, prixParItems, type_cout_mapping.SUPER_COST, item.itemtype, item.items_id);
+                                                }
+                                            } else {
+                                                await upsert(selectedTicket.id, Number(prixCloture), type_cout_mapping.SUPER_COST, "", null);
+                                            }
+                                        } catch (error: any) {
+                                            console.error("Erreur lors de la clôture des coûts : " + error.message);
+                                            alert("Erreur lors du calcul ou de l'enregistrement des coûts.");
+                                        } finally {
+                                            await proceedStatusUpdate(selectedTicket, pendingStatusId, commentaire.trim());
                                         }
                                     }
                                     setIsClosed(false);
                                     setSelectedTicket(null);
                                     setPendingStatusId(null);
                                     setCommentaire("");
+                                    setPrixCloture("");
                                 }}
                             >
                                 Valider et Clôturer
@@ -541,14 +540,13 @@ export function TicketKanban() {
                                 type="button"
                                 className="btn-secondary"
                                 onClick={async () => {
-                                    await Remove(selectedTicket.id);
+                                    await Remove(selectedTicket.id, type_cout_mapping.SUPER_COST);
                                     await proceedStatusUpdate(selectedTicket, 2);
                                     setIsClosed(false);
                                     setReouvre(false);
                                     setSelectedTicket(null);
                                     setPendingStatusId(null);
                                     setCommentaire("");
-
                                 }}
                             >
                                 Annuler
@@ -558,17 +556,36 @@ export function TicketKanban() {
                                 className="ticket-form__submit"
                                 style={{ backgroundColor: '#22c55e', color: 'white' }}
                                 onClick={async () => {
-                                    // const lastCost = await getByTickets(selectedTicket.id);
-                                    await Reouvre(selectedTicket.id,pourcentage);
-                                    await proceedStatusUpdate(selectedTicket, 2);
-                                    setIsClosed(false);
-                                    setReouvre(false);
-                                    setSelectedTicket(null);
-                                    setPendingStatusId(null);
-                                    setCommentaire("");
+                                    if (pendingStatusId !== null) {
+                                        try {
+                                            const reelGLPI = await getCostByTickets(selectedTicket.id);
+                                            const coutInitial = reelGLPI ? (Number(reelGLPI.cost_Total) || 0) : 0;
+                                            const reel = (Number(pourcentage) * coutInitial) / 100;
+                                            const totalItems = linkedItems.length > 0 ? linkedItems.length : 1;
+                                            const prixParItems = reel / totalItems;
+                                            if (linkedItems.length > 0) {
+                                                for (const item of linkedItems) {
+                                                    await upsert(selectedTicket.id,prixParItems,type_cout_mapping.OUVERTURE,item.itemtype,item.items_id);
+                                                }
+                                            } else {
+                                                await upsert(selectedTicket.id,reel,type_cout_mapping.OUVERTURE,"Réouverture globale",null);
+                                            }
+                                        } catch (error: any) {
+                                            console.error("Erreur lors de l'application des coûts de réouverture :", error.message);
+                                        } finally {
+                                            await proceedStatusUpdate(selectedTicket, pendingStatusId, "Ticket réouvert avec application du pourcentage.");
+                                            setIsClosed(false);
+                                            setReouvre(false);
+                                            setSelectedTicket(null);
+                                            setPendingStatusId(null);
+                                            setCommentaire("");
+                                            setPrixCloture("");
+                                            setPourcentage(0);
+                                        }
+                                    }
                                 }}
                             >
-                                Valider et Clôturer
+                                Valider et Ouvrir
                             </button>
                         </div>
                     </div>

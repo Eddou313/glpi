@@ -41,8 +41,8 @@ export function useConsts() {
         ticketId: number, 
         cost: number, 
         typeCoutId: number, 
-        category: string | null = null, 
-        idItems: number | null = null
+        category: string | "" , 
+        idItems: number | null
     ): Promise<TicketCost> => {
         try {
             const reponse = await api.post(`/Cost/${ticketId}`, {
@@ -67,9 +67,9 @@ export function useConsts() {
         }
     };
     
-    const Reouvre = async (ticketId: number, costOuverture: number, category: string = "Réouverture"): Promise<TicketCost> => {
+    const Reouvre = async (ticketId: number, costOuverture: number, category: string ,idItems : number | null): Promise<TicketCost> => {
         try {
-            return await upsert(ticketId, costOuverture, type_cout_mapping.OUVERTURE, category);
+            return await upsert(ticketId, costOuverture, type_cout_mapping.OUVERTURE, category,idItems);
         } catch (erreur: any) {
             console.error("Erreur Reouvre : " + erreur.message);
             throw new Error(erreur.message);
