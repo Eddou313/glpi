@@ -1,70 +1,80 @@
 import { api } from "../../api/https";
 
+export const type_cout_mapping = {
+    GLPI: 1,
+    SUPER_COST: 2,
+    OUVERTURE: 3,
+} as const;
+
 export interface TicketCost {
-    id: number;
+    id?: number;
     ticket_id: number;
     cost: number;
-    nbr_elements: number;
-    status : boolean;
-    cost_reoverture : number;
+    id_items?: number ;
+    category: string | null;
+    type_cout: number; 
 }
 
 export function useConsts() {
+    
     const getAll = async (): Promise<TicketCost[]> => {
         try {
             const reponse = await api.get("/Cost");
-            console.log(reponse.data);
             return reponse.data;
+        } catch (erreur: any) {
+            console.error("Erreur getAll : " + erreur.message);
+            throw new Error(erreur.message);
         }
-        catch (erreur: any) {
-            console.error("Erreur lors de l'enregistrement du paramètre : " + erreur.message);
-            throw new Error("Erreur lors de l'enregistrement du paramètre : " + erreur.message);
-        }
-    }
-    const getByTickets = async (id: number): Promise<TicketCost> => {
+    };
+
+    const getByTickets = async (ticketId: number, typeCoutId: number): Promise<TicketCost> => {
         try {
-            const reponse = await api.get(`/Cost/${id}`);
+            const reponse = await api.post(`/Cost/detail/${ticketId}`, { type_cout: typeCoutId });
             return reponse.data;
+        } catch (erreur: any) {
+            console.error("Erreur getByTickets : " + erreur.message);
+            throw new Error(erreur.message);
         }
-        catch (erreur: any) {
-            console.error("Erreur lors de l'enregistrement du paramètre : " + erreur.message);
-            throw new Error("Erreur lors de l'enregistrement du paramètre : " + erreur.message);
-        }
-    }
-    const upsert = async (ticketId: number, cost: number, nb_elements: number): Promise<TicketCost> => {
+    };
+
+    const upsert = async (
+        ticketId: number, 
+        cost: number, 
+        typeCoutId: number, 
+        category: string | null = null, 
+        idItems: number | null = null
+    ): Promise<TicketCost> => {
         try {
             const reponse = await api.post(`/Cost/${ticketId}`, {
-                ticket_id: ticketId,
                 cost,
-                nbr_elements: nb_elements 
+                id_items: idItems,
+                category,
+                type_cout: typeCoutId
             });
             return reponse.data;
+        } catch (erreur: any) {
+            console.error("Erreur upsert : " + erreur.message);
+            throw new Error(erreur.message);
         }
-        catch (erreur: any) {
-            console.error("Erreur lors de l'enregistrement du coût : " + erreur.message);
-            throw new Error("Erreur lors de l'enregistrement du coût : " + erreur.message);
-        }
-    }
-    const Remove = async (id: number): Promise<TicketCost> => {
+    };
+
+    const Remove = async (ticketId: number, typeCoutId: number): Promise<void> => {
         try {
-            const reponse = await api.delete(`/Cost/${id}`);
-            return reponse.data;
+            await api.delete(`/Cost/${ticketId}`, { data: { type_cout: typeCoutId } });
+        } catch (erreur: any) {
+            console.error("Erreur Remove : " + erreur.message);
+            throw new Error(erreur.message);
         }
-        catch (erreur: any) {
-            console.error("Erreur lors de l'enregistrement du paramètre : " + erreur.message);
-            throw new Error("Erreur lors de l'enregistrement du paramètre : " + erreur.message);
-        }
-    }
-    const Reouvre = async (id: number,a:number): Promise<TicketCost> => {
+    };
+    
+    const Reouvre = async (ticketId: number, costOuverture: number, category: string = "Réouverture"): Promise<TicketCost> => {
         try {
-            const reponse = await api.post(`/Cost/ouvre/${id}`,{idT : id,cost_reoverture : a});
-            console.log(reponse.data);
-            return reponse.data;
+            return await upsert(ticketId, costOuverture, type_cout_mapping.OUVERTURE, category);
+        } catch (erreur: any) {
+            console.error("Erreur Reouvre : " + erreur.message);
+            throw new Error(erreur.message);
         }
-        catch (erreur: any) {
-            console.error("Erreur lors de l'enregistrement du paramètre : " + erreur.message);
-            throw new Error("Erreur lors de l'enregistrement du paramètre : " + erreur.message);
-        }
-    }
-    return { getAll, getByTickets, upsert ,Remove,Reouvre}
+    };
+
+    return { getAll, getByTickets, upsert, Remove, Reouvre };
 }
