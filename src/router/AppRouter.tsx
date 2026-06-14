@@ -15,6 +15,7 @@ import { ParameterPages } from "../pages/parameter/ParameterPages"
 import TicketKanban from "../pages/FrontOffice/Tickets/TicketKanban"
 import { CostsPage } from "../pages/FrontOffice/Tickets/Cost"
 import GlpiTicketsCostsPage from "../pages/tickets/ConstTickets"
+import { Cost } from "../pages/tickets/Cost"
 
 function AppRouter() {
   return (
@@ -39,6 +40,7 @@ function AppRouter() {
           <Route path="/elements" element={<ItemsPage />} />
           <Route path="/TicketView" element={<TicketKanban />} />
           <Route path="/tickets/create" element={<CreateTicketPage />} />
+          <Route path="/Cost" element={< Cost />}></Route>
         </Route>
       </Routes>
     </BrowserRouter>
