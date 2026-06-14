@@ -32,7 +32,7 @@ db.exec(
     cost REAL NOT NULL DEFAULT 0, 
     id_items INTEGER,
     category String,
-    type_cout String   
+    type_cout INTEGER NOT NULL   
   );
 `
 );
