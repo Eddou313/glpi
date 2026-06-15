@@ -110,7 +110,7 @@ export function SuperCost() {
   return (
     <div className="glpi-costs-container">
       {/* Section de recherche et d'actions décommentée pour être fonctionnelle */}
-      <div className="glpi-costs-header-actions">
+      {/* <div className="glpi-costs-header-actions">
         <div className="glpi-costs-filter">
           <input
             type="text"
@@ -123,7 +123,7 @@ export function SuperCost() {
         <button onClick={refresh} className="glpi-refresh-btn" disabled={loading}>
           {loading ? "Chargement..." : "Actualiser"}
         </button>
-      </div>
+      </div> */}
 
       {error && <div className="glpi-costs-error">{error}</div>}
 
