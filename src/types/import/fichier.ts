@@ -27,6 +27,11 @@ export type colonneCSV = {
         Duration_second: string;
         Time_Cost: string;
         Fixed_Cost: string;
+    },
+    fichier4:{
+        Tickets : string;
+        mvt : string;
+        valeur:number;
     }
 }
 
@@ -40,6 +45,12 @@ export const FICHIER1_COLUMNS = [
     "Model",
     "Inventory_Number",
     "User",
+] as const;
+
+export const FICHIER4_COLUMNS = [
+    "Tickets",
+    "mvt",
+    "valeur",
 ] as const;
 
 export const FICHIER2_COLUMNS = [

@@ -108,7 +108,7 @@ async function importTicketRow(row: CsvRow2, index: number): Promise<ImportRowRe
 
     importCache.ticket.set(fallbackRef, res.id);
     importCache.ticketDetail.set(ref, cachedTicket);
-
+    importCache.persistTickets();
     console.log(`[CACHE TIER 2] Ticket enregistré : Clé="${fallbackRef}" -> ID GLPI=${res.id}`);
 
     result.status = "success";

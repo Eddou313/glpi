@@ -11,6 +11,8 @@ const NAV_LINKS = [
   { to: '/import',    label: 'Import',            icon: FileInput       },
   { to: '/Parameter',    label: 'Paramettre',            icon: Settings       },
   { to: '/Costs',    label: 'Costs',            icon: Coins       },
+  { to: '/Import4',    label: 'Import4',            icon: FileInput       },
+
 ];
 
 export function Navbar() {

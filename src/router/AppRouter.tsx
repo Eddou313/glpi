@@ -15,6 +15,7 @@ import { ParameterPages } from "../pages/parameter/ParameterPages"
 import TicketKanban from "../pages/FrontOffice/Tickets/TicketKanban"
 import GlpiTicketsCostsPage from "../pages/tickets/ConstTickets"
 import SuperCost from "../pages/tickets/SuperCost"
+import ImportMvt from "../pages/importFIchier2/ImportMvt"
 
 function AppRouter() {
   return (
@@ -33,6 +34,7 @@ function AppRouter() {
           <Route path="/Parameter" element={<ParameterPages />} />
           <Route path="/Costs" element={<SuperCost />} />
           <Route path="/CostsTickets" element={<GlpiTicketsCostsPage />} />
+          <Route path="/Import4" element={<ImportMvt />}></Route>
         </Route>
         {/* frontoffice */}
         <Route element={<FrontOfficeLayout />}>
