@@ -1,10 +1,16 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { type_cout_mapping, useConsts, type TicketCost } from "../../hooks/costs/useCosts";
 import "./super.css";
 
+interface TypeCoutCumule {
+  typeCoutId: number;
+  typeName: string;
+  cost: number;
+}
+
 interface CategoryGroup {
   categoryName: string;
-  items: TicketCost[];
+  items: TypeCoutCumule[];
   subTotal: number;
 }
 
@@ -32,8 +38,7 @@ export function SuperCost() {
     refresh();
   }, [refresh]);
 
-  const fmt = (n: number) =>
-    n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Ar';
+  const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Ar';
 
   const getTypeText = (typeId: number) => {
     switch (typeId) {
@@ -43,31 +48,69 @@ export function SuperCost() {
       default: return `Inconnu (${typeId})`;
     }
   };
-  const filteredRows = rows.filter(r =>  r.ticket_id.toString().includes(search) ||  (r.category && r.category.toLowerCase().includes(search.toLowerCase())));
 
-  const groupedCategories = filteredRows.reduce<Record<string, TicketCost[]>>((acc, row) => {
-    const catName = row.category || "Sans catégorie";
-    if (!acc[catName]) {
-      acc[catName] = [];
-    }
-    acc[catName].push(row);
-    return acc;
-  }, {});
-  
-  const categoriesList: CategoryGroup[] = Object.keys(groupedCategories).map(catName => {
-    const items = groupedCategories[catName];
-    const subTotal = items.reduce((sum, item) => sum + item.cost, 0);
-    return {
-      categoryName: catName,
-      items,
-      subTotal
-    };
-  });
-  const grandTotal = filteredRows.reduce((sum, r) => sum + r.cost, 0);
+  const filteredRows = useMemo(() => {
+    return rows.filter(r => 
+      r.ticket_id.toString().includes(search) || 
+      (r.category && r.category.toLowerCase().includes(search.toLowerCase()))
+    );
+  }, [rows, search]);
+
+  const categoriesList = useMemo<CategoryGroup[]>(() => {
+    // Étape A : Regroupement initial par nom de catégorie
+    const groupedCategories = filteredRows.reduce<Record<string, TicketCost[]>>((acc, row) => {
+      const catName = row.category || "Sans catégorie";
+      if (!acc[catName]) {
+        acc[catName] = [];
+      }
+      acc[catName].push(row);
+      return acc;
+    }, {});
+
+    // Étape B : Transformation et fusion par type_cout à l'intérieur de chaque catégorie
+    return Object.keys(groupedCategories).map(catName => {
+      const rowsInCat = groupedCategories[catName];
+
+      // On fusionne les montants pour les types de coût identiques
+      const subGroupedType = rowsInCat.reduce<Record<number, number>>((acc, row) => {
+        const typeId = row.type_cout;
+        if (!acc[typeId]) {
+          acc[typeId] = 0;
+        }
+        acc[typeId] += row.cost; 
+        return acc;
+      }, {});
+
+      // Création de la liste des lignes finales pour cette catégorie
+      const items: TypeCoutCumule[] = Object.keys(subGroupedType).map(typeIdStr => {
+        const typeId = Number(typeIdStr);
+        return {
+          typeCoutId: typeId,
+          typeName: getTypeText(typeId),
+          cost: subGroupedType[typeId]
+        };
+      });
+
+      // Calcul automatique du sous-total de la catégorie
+      const subTotal = items.reduce((sum, item) => sum + item.cost, 0);
+
+      return {
+        categoryName: catName,
+        items,
+        subTotal
+      };
+    });
+  }, [filteredRows]);
+
+  // 3. Calcul du total général
+  const grandTotal = useMemo(() => {
+    return filteredRows.reduce((sum, r) => sum + r.cost, 0);
+  }, [filteredRows]);
 
   return (
     <div className="glpi-costs-container">
-      {/* <div className="glpi-costs-header-actions">
+      {/* Section de recherche et d'actions décommentée pour être fonctionnelle */}
+      <div className="glpi-costs-header-actions">
         <div className="glpi-costs-filter">
           <input
             type="text"
@@ -80,7 +123,7 @@ export function SuperCost() {
         <button onClick={refresh} className="glpi-refresh-btn" disabled={loading}>
           {loading ? "Chargement..." : "Actualiser"}
         </button>
-      </div> */}
+      </div>
 
       {error && <div className="glpi-costs-error">{error}</div>}
 
@@ -102,27 +145,32 @@ export function SuperCost() {
             
             {categoriesList.map((group) => (
               <tbody key={group.categoryName} className="category-group-body">
+                {/* Ligne d'en-tête de la Catégorie (Bandeau violet) */}
                 <tr className="category-header-row">
                   <td colSpan={4}>
-                    <span className="category-badge">Catégorie : {group.categoryName}</span>
+                    <span className="category-badge">CATÉGORIE : {group.categoryName.toUpperCase()}</span>
                   </td>
                 </tr>
                 
-                {group.items.map((r) => (
-                  <tr key={r.id || `${r.ticket_id}-${r.type_cout}`}>
-                    <td className="cell-id">#{r.ticket_id}</td>
-                    <td className="cell-item-id">{r.id_items ? `#${r.id_items}` : '-'}</td>
-                    <td className="cell-type">{getTypeText(r.type_cout)}</td>
-                    <td className="cell-num">{fmt(r.cost)}</td>
+                {/* Lignes intérieures : Affichage des types de coûts uniques fusionnés */}
+                {group.items.map((item) => (
+                  <tr key={`${group.categoryName}-${item.typeCoutId}`}>
+                    {/* Les IDs spécifiques individuels sont mis à '-' car les lignes sont fusionnées globalement */}
+                    <td className="cell-id">-</td>
+                    <td className="cell-item-id">-</td>
+                    <td className="cell-type" style={{ fontWeight: 500 }}>{item.typeName}</td>
+                    <td className="cell-num">{fmt(item.cost)}</td>
                   </tr>
                 ))}
                 
+                {/* Ligne du Sous-total par Catégorie */}
                 <tr className="category-subtotal-row">
                   <td colSpan={3} className="text-right">Sous-total <strong>{group.categoryName}</strong> :</td>
                   <td className="cell-num cell-subtotal-bold">{fmt(group.subTotal)}</td>
                 </tr>
               </tbody>
             ))}
+            
             <tfoot>
               <tr className="glpi-costs-foot-row">
                 <td colSpan={3}><strong>TOTAL CUMULÉ GÉNÉRAL</strong></td>
