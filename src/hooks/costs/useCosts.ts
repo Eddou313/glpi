@@ -99,9 +99,9 @@ export function useConsts() {
         }
     }, []);
 
-    const RemoveForce = useCallback(async (ticketId: number, typeCoutId: number): Promise<void> => {
+    const RemoveForce = useCallback(async (ticketId: number, typeCoutId: number,nbr_items: number): Promise<void> => {
         try {
-            await api.delete(`/Cost/force/${ticketId}`, { data: { type_cout: typeCoutId } });
+            await api.delete(`/Cost/force/${ticketId}`, { data: { type_cout: typeCoutId , nbr_items: nbr_items } });
         } catch (erreur: any) {
             console.error("Erreur Remove : " + erreur.message);
             throw new Error(erreur.message);

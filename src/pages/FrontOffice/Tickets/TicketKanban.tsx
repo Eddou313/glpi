@@ -554,9 +554,10 @@ export function TicketKanban() {
                                 type="button"
                                 className="btn-secondary"
                                 onClick={async () => {
+                                    const totalItems = linkedItems.length > 0 ? linkedItems.length : 1;
                                     await Remove(selectedTicket.id, type_cout_mapping.SUPER_COST);
-                                    await RemoveForce(selectedTicket.id, type_cout_mapping.SUPER_COST);
-                                    await RemoveForce(selectedTicket.id, type_cout_mapping.OUVERTURE);
+                                    await RemoveForce(selectedTicket.id, type_cout_mapping.SUPER_COST, totalItems);
+                                    // await RemoveForce(selectedTicket.id, type_cout_mapping.OUVERTURE);
                                     await proceedStatusUpdate(selectedTicket, 2);
                                     setIsClosed(false);
                                     setReouvre(false);
@@ -591,7 +592,7 @@ export function TicketKanban() {
                                         } catch (error: any) {
                                             console.error("Erreur lors de l'application des coûts de réouverture :", error.message);
                                         } finally {
-                                            await RemoveForce(selectedTicket.id, type_cout_mapping.SUPER_COST);
+                                            // await RemoveForce(selectedTicket.id, type_cout_mapping.SUPER_COST);
                                             await proceedStatusUpdate(selectedTicket, pendingStatusId, "Ticket réouvert avec application du pourcentage.");
                                             setIsClosed(false);
                                             setReouvre(false);

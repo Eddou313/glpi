@@ -41,18 +41,18 @@ export const upsterConst = (req: Request, res: Response) => {
         
         const existingCost = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ? AND id_items =?').get(id, typeCoutId,id_items);
 
-        if (existingCost) {
-            db.prepare(`
-                UPDATE cost 
-                SET cost = ?, id_items = ?, category = ? 
-                WHERE ticket_id = ? AND type_cout = ?
-            `).run(costVal, itemId, cat, id, typeCoutId);
-        } else {
+        // if (existingCost) {
+        //     db.prepare(`
+        //         UPDATE cost 
+        //         SET cost = ?, id_items = ?, category = ? 
+        //         WHERE ticket_id = ? AND type_cout = ?
+        //     `).run(costVal, itemId, cat, id, typeCoutId);
+        // } else {
             db.prepare(`
                 INSERT INTO cost (ticket_id, cost, id_items, category, type_cout) 
                 VALUES (?, ?, ?, ?, ?)
             `).run(id, costVal, itemId, cat, typeCoutId);
-        }
+        // }
         
         const rep = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ?').get(id, typeCoutId);
         res.json(rep);
@@ -98,10 +98,21 @@ export const deleteCostForce = (req: Request, res: Response) => {
     try {
         const id = Number(req.params.ticket_id);
         const type_cout = Number(req.body.type_cout); 
+        const nbr_items = Number(req.body.nbr_items); 
         if (isNaN(id) || isNaN(type_cout)) {
             return res.status(400).json({ error: "ID ou type de coût invalide." });
         }
-        const info = db.prepare('DELETE FROM cost WHERE ticket_id = ? AND type_cout = ?').run(id,type_cout);
+        const info = db.prepare(`
+            DELETE FROM cost
+            WHERE id IN (
+                SELECT id
+                FROM cost
+                WHERE ticket_id = ?
+                AND type_cout = ?
+                ORDER BY id DESC
+                LIMIT ?
+            )
+        `).run(id, type_cout, nbr_items);
         if (info.changes === 0) {
             return res.status(404).json({ error: `Coût avec le type ID ${type_cout} non trouvé pour ce ticket.` });
         }
