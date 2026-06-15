@@ -1,5 +1,5 @@
-import { api } from "../../api/https";
-import type { Parameter } from "../../types/parameter/parameter";
+import { api } from "../../../../api/https";
+import type { Parameter } from "../../../../types/parameter/parameter";
 
 export function useParameter() {
     const createParameter = async (parameter: Parameter) => {
