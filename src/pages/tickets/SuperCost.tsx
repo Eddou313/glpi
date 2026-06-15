@@ -43,10 +43,7 @@ export function SuperCost() {
       default: return `Inconnu (${typeId})`;
     }
   };
-  const filteredRows = rows.filter(r => 
-    r.ticket_id.toString().includes(search) || 
-    (r.category && r.category.toLowerCase().includes(search.toLowerCase()))
-  );
+  const filteredRows = rows.filter(r =>  r.ticket_id.toString().includes(search) ||  (r.category && r.category.toLowerCase().includes(search.toLowerCase())));
 
   const groupedCategories = filteredRows.reduce<Record<string, TicketCost[]>>((acc, row) => {
     const catName = row.category || "Sans catégorie";
@@ -56,6 +53,7 @@ export function SuperCost() {
     acc[catName].push(row);
     return acc;
   }, {});
+  
   const categoriesList: CategoryGroup[] = Object.keys(groupedCategories).map(catName => {
     const items = groupedCategories[catName];
     const subTotal = items.reduce((sum, item) => sum + item.cost, 0);
