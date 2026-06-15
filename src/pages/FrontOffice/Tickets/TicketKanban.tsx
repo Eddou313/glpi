@@ -6,7 +6,7 @@ import type { GlpiAsset } from "../../../types/elements/items.types";
 import './TicketKanban.css';
 import { LANGUE } from '../../../types/parameter/parameter';
 import { type_cout_mapping, useConsts } from '../../../hooks/costs/useCosts';
-// import { useCostTicketsGLPI } from '../../../hooks/costs/useCostTicketsGLPI';
+import { useCostTicketsGLPI } from '../../../hooks/costs/useCostTicketsGLPI';
 
 export function TicketKanban() {
     const { allTickets, statusUtiliser, Parameters, loading, error } = useTicketKanban();
@@ -18,7 +18,7 @@ export function TicketKanban() {
 
     const { getByTickets, upsert: upsert, Remove, Reouvre, getIsDeleted, RemoveForce } = useConsts();
     const [prixCloture, setPrixCloture] = useState<string>("");
-    // const { getCostByTickets } = useCostTicketsGLPI();
+    const { getCostByTickets } = useCostTicketsGLPI();
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [currentColumnStatusId, setCurrentColumnStatusId] = useState<number | null>(null);
@@ -499,14 +499,19 @@ export function TicketKanban() {
                                     }
                                     if (pendingStatusId !== null) {
                                         try {
+                                            const reelGLPI = await getCostByTickets(selectedTicket.id);
                                             const totalItems = linkedItems.length > 0 ? linkedItems.length : 1;
                                             const prixParItems = Number(prixCloture) / totalItems;
+                                            const prixParItemsGLPI = Number(reelGLPI?.cost_Total || 0) / totalItems;
+                                            console.log("cout reel GLPI par items :", prixParItemsGLPI);
                                             if (linkedItems.length > 0) {
                                                 for (const item of linkedItems) {
                                                     await upsert(selectedTicket.id, prixParItems, type_cout_mapping.SUPER_COST, item.itemtype, item.items_id);
+                                                    await upsert(selectedTicket.id, prixParItemsGLPI, type_cout_mapping.GLPI, item.itemtype, item.items_id);
                                                 }
                                             } else {
                                                 await upsert(selectedTicket.id, Number(prixCloture), type_cout_mapping.SUPER_COST, "", null);
+                                                await upsert(selectedTicket.id, Number(prixParItemsGLPI), type_cout_mapping.GLPI, "", null);
                                             }
                                         } catch (error: any) {
                                             console.error("Erreur lors de la clôture des coûts : " + error.message);
@@ -555,7 +560,7 @@ export function TicketKanban() {
                                 className="btn-secondary"
                                 onClick={async () => {
                                     const totalItems = linkedItems.length > 0 ? linkedItems.length : 1;
-                                    await Remove(selectedTicket.id, type_cout_mapping.SUPER_COST);
+                                    // await Remove(selectedTicket.id, type_cout_mapping.SUPER_COST);
                                     await RemoveForce(selectedTicket.id, type_cout_mapping.SUPER_COST, totalItems);
                                     // await RemoveForce(selectedTicket.id, type_cout_mapping.OUVERTURE);
                                     await proceedStatusUpdate(selectedTicket, 2);
@@ -575,7 +580,6 @@ export function TicketKanban() {
                                 onClick={async () => {
                                     if (pendingStatusId !== null) {
                                         try {
-                                            // const reelGLPI = await getCostByTickets(selectedTicket.id);
                                             const dernierSuperCost = await getByTickets(selectedTicket.id, type_cout_mapping.SUPER_COST);
                                             const coutInitial = dernierSuperCost ? (Number(dernierSuperCost.cost) || 0) : 0;
                                             const reel = (Number(pourcentage) * coutInitial) / 100;

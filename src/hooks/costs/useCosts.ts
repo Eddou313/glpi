@@ -17,6 +17,13 @@ export interface TicketCost {
     is_deleted: boolean
 }
 
+export interface TicketCostDisplay extends TicketCost {
+  glpiCostPerItem: number;
+  glpiCostTotal: number;
+  linkedItemsCount: number;
+  totalCost: number;
+}
+
 export function useConsts() {
 
     const getAll = useCallback(async (): Promise<TicketCost[]> => {

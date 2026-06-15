@@ -38,21 +38,31 @@ export const upsterConst = (req: Request, res: Response) => {
         const costVal = parseFloat(cost) || 0;
         const itemId = id_items ? parseInt(id_items, 10) : null;
         const cat = category || null;
-        
-        const existingCost = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ? AND id_items =?').get(id, typeCoutId,id_items);
 
-        // if (existingCost) {
-        //     db.prepare(`
-        //         UPDATE cost 
-        //         SET cost = ?, id_items = ?, category = ? 
-        //         WHERE ticket_id = ? AND type_cout = ?
-        //     `).run(costVal, itemId, cat, id, typeCoutId);
-        // } else {
+        if(type_cout === 1)
+        {
+            const existingCost = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ? AND id_items =?').get(id, typeCoutId,id_items);
+            if (existingCost) {
+                db.prepare(`
+                    UPDATE cost 
+                    SET cost = ?, id_items = ?, category = ? 
+                    WHERE ticket_id = ? AND type_cout = ?
+                `).run(costVal, itemId, cat, id, typeCoutId);
+            } else {
+                db.prepare(`
+                    INSERT INTO cost (ticket_id, cost, id_items, category, type_cout) 
+                    VALUES (?, ?, ?, ?, ?)
+                `).run(id, costVal, itemId, cat, typeCoutId);
+            }
+        }
+        else
+        {
+            const existingCost = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ? AND id_items =?').get(id, typeCoutId,id_items);
             db.prepare(`
                 INSERT INTO cost (ticket_id, cost, id_items, category, type_cout) 
                 VALUES (?, ?, ?, ?, ?)
             `).run(id, costVal, itemId, cat, typeCoutId);
-        // }
+        }
         
         const rep = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ?').get(id, typeCoutId);
         res.json(rep);
