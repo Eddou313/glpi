@@ -55,12 +55,13 @@ export function useImportTest() {
                     } else {
                         await upsert(id, parItem, type_cout_mapping.OUVERTURE, "Réouverture globale", null);
                     }
+                    await TicketServiceFront.updateStatus(id, 2);
                 }
                 else if (rows[i].mvt === "cancel") {
                     const totalItemsC = relations.length > 0 ? relations.length : 1;
                     console.log("cancel avec total Items cancel"+totalItemsC);
-
                     await RemoveForce(id, type_cout_mapping.SUPER_COST, totalItems);
+                    await TicketServiceFront.updateStatus(id, 2);
                 }
                 else {
                     try {
@@ -75,12 +76,12 @@ export function useImportTest() {
                             await upsert(id, Number(valeur), type_cout_mapping.SUPER_COST, "", null);
                             await upsert(id, Number(prixParItemsGLPI), type_cout_mapping.GLPI, "", null);
                         }
+                        await TicketServiceFront.updateStatus(id, 6, "Clôture via import CSV");
                     } catch (error: any) {
                         console.error("Erreur lors de la clôture des coûts : " + error.message);
                         alert("Erreur lors du calcul ou de l'enregistrement des coûts.");
                     }
                 }
-
                 console.log("------------------------------");
             }
         }
