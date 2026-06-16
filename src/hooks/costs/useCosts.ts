@@ -7,16 +7,44 @@ export const type_cout_mapping = {
     OUVERTURE: 3,
 } as const;
 
-export const obtenirDateAujourdhuiPourSQLite = (): string => {
-  const maintenant = new Date();
-  const annee = maintenant.getFullYear();
-  const mois = String(maintenant.getMonth() + 1).padStart(2, "0");
-  const jour = String(maintenant.getDate()).padStart(2, "0");
-  const heures = String(maintenant.getHours()).padStart(2, "0");
-  const minutes = String(maintenant.getMinutes()).padStart(2, "0");
-  const secondes = String(maintenant.getSeconds()).padStart(2, "0");
+interface DateOptions {
+  annee?: number;
+  mois?: number;
+  jour?: number;
+  heures?: number;
+  minutes?: number;
+  secondes?: number;
+}
+// obtenirDateFormatee({ annee: 2029, mois: 12 }); 
+// Résultat : "2029-12-16 14:30:15" (garde le jour et l'heure actuelle)
 
-  return `${annee}-${mois}-${jour} ${heures}:${minutes}:${secondes}`;
+// obtenirDateFormatee({ heures: 8, minutes: 0, secondes: 0 }); 
+// Résultat : "2026-06-16 08:00:00"
+export const obtenirDateFormatee = (options?: DateOptions): string => {
+  const maintenant = new Date();
+
+  // Si une option est fournie, on l'utilise, sinon on prend la valeur actuelle
+  const annee = options?.annee ?? maintenant.getFullYear();
+  // Attention : les mois de l'objet Date vont de 0 à 11. 
+  // Si l'utilisateur passe "3" pour Mars, on fait 3 - 1 = 2.
+  const moisIndex = options?.mois !== undefined ? options.mois - 1 : maintenant.getMonth();
+  const jour = options?.jour ?? maintenant.getDate();
+  const heures = options?.heures ?? maintenant.getHours();
+  const minutes = options?.minutes ?? maintenant.getMinutes();
+  const secondes = options?.secondes ?? maintenant.getSeconds();
+
+  // On crée une nouvelle date basée sur ces composants
+  const dateFinale = new Date(annee, moisIndex, jour, heures, minutes, secondes);
+
+  // Formatage avec padStart pour garantir le format SQLite (YYYY-MM-DD HH:mm:ss)
+  const fAnnee = dateFinale.getFullYear();
+  const fMois = String(dateFinale.getMonth() + 1).padStart(2, "0");
+  const fJour = String(dateFinale.getDate()).padStart(2, "0");
+  const fHeures = String(dateFinale.getHours()).padStart(2, "0");
+  const fMinutes = String(dateFinale.getMinutes()).padStart(2, "0");
+  const fSecondes = String(dateFinale.getSeconds()).padStart(2, "0");
+
+  return `${fAnnee}-${fMois}-${fJour} ${fHeures}:${fMinutes}:${fSecondes}`;
 };
 
 export interface TicketCost {
@@ -74,7 +102,7 @@ export function useConsts() {
         idItems: number | null
     ): Promise<TicketCost> => {
         try {
-            const dateAujourdhui = obtenirDateAujourdhuiPourSQLite();
+            const dateAujourdhui = obtenirDateFormatee();
             const reponse = await api.post(`/Cost/${ticketId}`, {
                 cost,
                 id_items: idItems,
@@ -133,3 +161,24 @@ export function useConsts() {
 
     return { getAll, getByTickets, upsert, Remove, Reouvre, getIsDeleted, RemoveForce };
 }
+
+// const dateStr = "01-02-2006"; // Format: JJ-MM-AAAA
+// const heureStr = "08:02:04";  // Format: HH:mm:ss
+
+// 1. On divise la date par le tiret "-"
+    // const [jour, mois, annee] = dateStr.split("-").map(Number);
+
+// 2. On divise l'heure par les deux-points ":"
+    // const [heures, minutes, secondes] = heureStr.split(":").map(Number);
+
+// 3. On passe le tout à notre fonction sous forme d'objet
+    // const dateSQLite = obtenirDateFormatee({
+    //   annee,
+    //   mois,
+    //   jour,
+    //   heures,
+    //   minutes,
+    //   secondes
+    // });
+
+// console.log(dateSQLite);
