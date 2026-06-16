@@ -3,7 +3,7 @@ import db from '../db/db.ts';
 
 export const getAllCost = (req: Request, res: Response) => {
     try {
-        const costs = db.prepare('SELECT id, ticket_id, cost, id_items, category, type_cout FROM cost').all();
+        const costs = db.prepare('SELECT id, ticket_id, cost, id_items, category, type_cout , "group" FROM cost').all();
         res.json(costs);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -28,7 +28,7 @@ export const getCostTickets = (req: Request, res: Response) => {
 export const upsterConst = (req: Request, res: Response) => { 
     try {
         const id = Number(req.params.ticket_id);
-        const { cost, id_items, category, type_cout } = req.body;
+        const { cost, id_items, category, type_cout, group } = req.body;
         
         const typeCoutId = Number(type_cout);
 
@@ -51,17 +51,17 @@ export const upsterConst = (req: Request, res: Response) => {
                 `).run(costVal, itemId, cat, id, typeCoutId);
             } else {
                 db.prepare(`
-                    INSERT INTO cost (ticket_id, cost, id_items, category, type_cout) 
-                    VALUES (?, ?, ?, ?, ?)
-                `).run(id, costVal, itemId, cat, typeCoutId);
+                    INSERT INTO cost (ticket_id, cost, id_items, category, type_cout,"group") 
+                    VALUES (?, ?, ?, ?, ?,?)
+                `).run(id, costVal, itemId, cat, typeCoutId, group);
             }
         }
         else
         {
             db.prepare(`
-                INSERT INTO cost (ticket_id, cost, id_items, category, type_cout) 
-                VALUES (?, ?, ?, ?, ?)
-            `).run(id, costVal, itemId, cat, typeCoutId);
+                INSERT INTO cost (ticket_id, cost, id_items, category, type_cout,"group") 
+                VALUES (?, ?, ?, ?, ?,?)
+            `).run(id, costVal, itemId, cat, typeCoutId, group);
         }
         
         const rep = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ?').get(id, typeCoutId);

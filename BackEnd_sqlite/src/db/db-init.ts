@@ -33,7 +33,8 @@ db.exec(
     id_items INTEGER,
     category String,
     type_cout INTEGER NOT NULL,
-    is_deleted BOOLEAN DEFAULT false   
+    is_deleted BOOLEAN DEFAULT 0 ,
+    "group" TEXT 
   );
 `
 );

@@ -7,6 +7,18 @@ export const type_cout_mapping = {
     OUVERTURE: 3,
 } as const;
 
+export const obtenirDateAujourdhuiPourSQLite = (): string => {
+  const maintenant = new Date();
+  const annee = maintenant.getFullYear();
+  const mois = String(maintenant.getMonth() + 1).padStart(2, "0");
+  const jour = String(maintenant.getDate()).padStart(2, "0");
+  const heures = String(maintenant.getHours()).padStart(2, "0");
+  const minutes = String(maintenant.getMinutes()).padStart(2, "0");
+  const secondes = String(maintenant.getSeconds()).padStart(2, "0");
+
+  return `${annee}-${mois}-${jour} ${heures}:${minutes}:${secondes}`;
+};
+
 export interface TicketCost {
     id?: number;
     ticket_id: number;
@@ -15,6 +27,7 @@ export interface TicketCost {
     category: string | null;
     type_cout: number;
     is_deleted: boolean
+    group: string;
 }
 
 export interface TicketCostDisplay extends TicketCost {
@@ -61,11 +74,13 @@ export function useConsts() {
         idItems: number | null
     ): Promise<TicketCost> => {
         try {
+            const dateAujourdhui = obtenirDateAujourdhuiPourSQLite();
             const reponse = await api.post(`/Cost/${ticketId}`, {
                 cost,
                 id_items: idItems,
                 category,
-                type_cout: typeCoutId
+                type_cout: typeCoutId,
+                group: dateAujourdhui
             });
             return reponse.data;
         } catch (erreur: any) {
