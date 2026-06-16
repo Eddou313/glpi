@@ -200,7 +200,7 @@ export function useConsts() {
                 return null;
             }
             const data: TicketCost[] = reponse.data;
-            return data.length
+            return data.length || reponse.data.length || 1;
         } catch (erreur: any) {
             console.error("Erreur getByTickets : " + erreur.message);
             return null;

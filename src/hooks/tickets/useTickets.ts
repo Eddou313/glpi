@@ -104,7 +104,9 @@ export function TraiteTickets() {
       else if (mode === 3) {
         const MoyenneSuperCost = await getByTicketsAll(idTickets, type_cout_mapping.SUPER_COST, totalItems);
         const total  = await getByTicketsAllTotal(idTickets, type_cout_mapping.SUPER_COST, totalItems);
-        reelCost = Number(MoyenneSuperCost?.cost || 0)/Number(total);
+        reelCost = Number(MoyenneSuperCost?.cost || 0)/Number(total?total:1);
+        console.log("moyenne"+MoyenneSuperCost?.cost);
+        console.log("mode 3:"+reelCost);
       }
       else if (mode === 4) {
         const allSuperCost = await getByTicketsAll(idTickets, type_cout_mapping.SUPER_COST, totalItems);
@@ -113,6 +115,10 @@ export function TraiteTickets() {
       else {
         const dernierSuperCost = await getByTickets(idTickets, type_cout_mapping.SUPER_COST, totalItems);
         reelCost = dernierSuperCost?.cost || 0;
+      }
+      if(reelCost<0)
+      {
+        reelCost = 0;
       }
       const ouverture = (valeur * Number(reelCost)) / 100;
       const parItem = ouverture / totalItems;

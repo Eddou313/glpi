@@ -20,7 +20,7 @@ export const donner: Record<string, number> = {
 
 export function useImportTest() {
     const { getCostByTickets } = useCostTicketsGLPI();
-    const { getByTickets, upsert, RemoveForce ,getByTicketsFirst,getByTicketsAll,getByTicketsAllTotal} = useConsts();
+    const { getByTickets, upsert, RemoveForce, getByTicketsFirst, getByTicketsAll, getByTicketsAllTotal } = useConsts();
 
     const traiterLigneTicket = async (idTickets: number, row: colonneCSV["fichier4"]) => {
         console.log("id : " + idTickets);
@@ -48,7 +48,11 @@ export function useImportTest() {
             else if (mode === 3) {
                 const MoyenneSuperCost = await getByTicketsAll(idTickets, type_cout_mapping.SUPER_COST, totalItems);
                 const total = await getByTicketsAllTotal(idTickets, type_cout_mapping.SUPER_COST, totalItems);
-                reelCost = Number(MoyenneSuperCost?.cost || 0) / Number(total);
+                reelCost = Number(MoyenneSuperCost?.cost || 0) / Number(total ? total : 1);
+                console.log("moyenne"+MoyenneSuperCost?.cost);
+                console.log("total"+total);
+                console.log("mode 3:" + reelCost);
+
             }
             else if (mode === 4) {
                 const allSuperCost = await getByTicketsAll(idTickets, type_cout_mapping.SUPER_COST, totalItems);
