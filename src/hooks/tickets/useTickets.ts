@@ -81,9 +81,9 @@ export function useTickets(initialPage = 1, limit = 10) {
 
 export function TraiteTickets() {
   const { getCostByTickets } = useCostTicketsGLPI();
-  const { getByTickets, upsert, RemoveForce } = useConsts();
+  const { getByTickets, upsert, RemoveForce, getByTicketsFirst, getByTicketsAll ,getByTicketsAllTotal} = useConsts();
 
-  const traiterLigneTicket = async (idTickets: number, row: traitementTickets) => {
+  const traiterLigneTicket = async (idTickets: number, row: traitementTickets, mode: number) => {
     console.log("id : " + idTickets);
     const valeur = Number(row.valeur);
     const relations = await TicketServiceFront.getLinkedItems(idTickets);
@@ -96,10 +96,25 @@ export function TraiteTickets() {
     const prixParItemsGLPI = coutTotalGLPI / totalItems;
 
     if (row.mvt === "open") {
-      const dernierSuperCost = await getByTickets(idTickets, type_cout_mapping.SUPER_COST, totalItems);
-
-      const ouverture = (valeur * Number(dernierSuperCost?.cost || 0)) / 100;
-
+      let reelCost = 0;
+      if (mode === 2) {
+        const firstSuperCost = await getByTicketsFirst(idTickets, type_cout_mapping.SUPER_COST, totalItems);
+        reelCost = Number(firstSuperCost?.cost || 0);
+      }
+      else if (mode === 3) {
+        const MoyenneSuperCost = await getByTicketsAll(idTickets, type_cout_mapping.SUPER_COST, totalItems);
+        const total  = await getByTicketsAllTotal(idTickets, type_cout_mapping.SUPER_COST, totalItems);
+        reelCost = Number(MoyenneSuperCost?.cost || 0)/Number(total);
+      }
+      else if (mode === 4) {
+        const allSuperCost = await getByTicketsAll(idTickets, type_cout_mapping.SUPER_COST, totalItems);
+        reelCost = Number(allSuperCost?.cost || 0);
+      }
+      else {
+        const dernierSuperCost = await getByTickets(idTickets, type_cout_mapping.SUPER_COST, totalItems);
+        reelCost = dernierSuperCost?.cost || 0;
+      }
+      const ouverture = (valeur * Number(reelCost)) / 100;
       const parItem = ouverture / totalItems;
       if (relations.length > 0) {
         for (const item of relations) {
@@ -137,6 +152,6 @@ export function TraiteTickets() {
     }
     console.log("------------------------------");
   };
-  return {traiterLigneTicket}
+  return { traiterLigneTicket }
 }
 

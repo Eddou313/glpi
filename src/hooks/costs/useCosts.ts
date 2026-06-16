@@ -57,7 +57,6 @@ export interface TicketCost {
     is_deleted: boolean
     group: string;
 }
-
 export interface TicketCostDisplay extends TicketCost {
   glpiCostPerItem: number;
   glpiCostTotal: number;
@@ -158,8 +157,57 @@ export function useConsts() {
         }
     }, []);
 
+    const getByTicketsFirst = useCallback(async (ticketId: number, typeCoutId: number, nbrItems : number): Promise<TicketCost | null> => {
+        try {
+            const reponse = await api.get(`/Cost/first/${ticketId}`, { params: { type_cout: typeCoutId,nbrItems :nbrItems  } });
+            if (!reponse.data || !Array.isArray(reponse.data) || reponse.data.length === 0) {
+                return null;
+            }
+            const data: TicketCost[] = reponse.data;
+            const totalCost = data.reduce((sum, item) => sum + (item.cost || 0), 0);
+            return {
+                ...data[0],
+                cost: totalCost
+            };
+        } catch (erreur: any) {
+            console.error("Erreur getByTickets : " + erreur.message);
+            return null;
+        }
+    }, []);
 
-    return { getAll, getByTickets, upsert, Remove, Reouvre, getIsDeleted, RemoveForce };
+    const getByTicketsAll = useCallback(async (ticketId: number, typeCoutId: number, nbrItems : number): Promise<TicketCost | null> => {
+        try {
+            const reponse = await api.get(`/Cost/all/${ticketId}`, { params: { type_cout: typeCoutId,nbrItems :nbrItems  } });
+            if (!reponse.data || !Array.isArray(reponse.data) || reponse.data.length === 0) {
+                return null;
+            }
+            const data: TicketCost[] = reponse.data;
+            const totalCost = data.reduce((sum, item) => sum + (item.cost || 0), 0);
+            return {
+                ...data[0],
+                cost: totalCost
+            };
+        } catch (erreur: any) {
+            console.error("Erreur getByTickets : " + erreur.message);
+            return null;
+        }
+    }, []);
+
+    const getByTicketsAllTotal = useCallback(async (ticketId: number, typeCoutId: number, nbrItems : number): Promise<number | null> => {
+        try {
+            const reponse = await api.get(`/Cost/all/${ticketId}`, { params: { type_cout: typeCoutId,nbrItems :nbrItems  } });
+            if (!reponse.data || !Array.isArray(reponse.data) || reponse.data.length === 0) {
+                return null;
+            }
+            const data: TicketCost[] = reponse.data;
+            return data.length
+        } catch (erreur: any) {
+            console.error("Erreur getByTickets : " + erreur.message);
+            return null;
+        }
+    }, []);
+
+    return { getAll, getByTickets, upsert, Remove, Reouvre, getIsDeleted, RemoveForce,getByTicketsFirst,getByTicketsAll,getByTicketsAllTotal };
 }
 
 // const dateStr = "01-02-2006"; // Format: JJ-MM-AAAA

@@ -32,6 +32,7 @@ export type colonneCSV = {
         Tickets : string;
         mvt : string;
         valeur:number;
+        mode:number;
     }
 }
 
@@ -51,6 +52,7 @@ export const FICHIER4_COLUMNS = [
     "Tickets",
     "mvt",
     "valeur",
+    "mode",
 ] as const;
 
 export const FICHIER2_COLUMNS = [

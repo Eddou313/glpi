@@ -25,6 +25,35 @@ export const getCostTickets = (req: Request, res: Response) => {
     }
 };
 
+export const getCostTicketsPremier = (req: Request, res: Response) => { 
+    const ticket_id = Number(req.params.ticket_id);
+    const type_cout = Number(req.query.type_cout);
+    const nbrItems = Number(req.query.nbrItems);
+    try {
+        if (isNaN(ticket_id) || isNaN(type_cout)) {
+            return res.status(400).json({ error: "L'identifiant du ticket ou le type de coût est invalide." });
+        }
+        const cost = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ? ORDER BY id ASC LIMIT ?').all(ticket_id, type_cout,nbrItems);
+        res.json(cost || []);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const getCostTicketsAll = (req: Request, res: Response) => { 
+    const ticket_id = Number(req.params.ticket_id);
+    const type_cout = Number(req.query.type_cout);
+    const nbrItems = Number(req.query.nbrItems);
+    try {
+        if (isNaN(ticket_id) || isNaN(type_cout)) {
+            return res.status(400).json({ error: "L'identifiant du ticket ou le type de coût est invalide." });
+        }
+        const cost = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ?').all(ticket_id, type_cout);
+        res.json(cost || []);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
 export const upsterConst = (req: Request, res: Response) => { 
     try {
         const id = Number(req.params.ticket_id);

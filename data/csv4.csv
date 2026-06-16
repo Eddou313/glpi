@@ -1,5 +1,9 @@
-Tickets,mvt,valeur
-1,open,16.5
-2,open,5.5
-2,close,20
-2,cancel,
+Tickets,mvt,valeur,mode
+1,close,100,
+1,open,10,1
+1,close,200,
+1,open,10,2
+1,close,100,
+1,open,10,3
+1,close,0,
+1,open,50,4

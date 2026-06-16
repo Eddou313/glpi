@@ -37,6 +37,7 @@ function ImportMvt() {
       Tickets: inputTicket,
       mvt: inputMvt,
       valeur: Number(inputValeur),
+      mode:1
     };
 
     setDonnerManuel((prev) => [...prev, nouvelleLigne]);

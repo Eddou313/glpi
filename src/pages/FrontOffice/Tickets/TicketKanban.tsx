@@ -7,6 +7,7 @@ import './TicketKanban.css';
 import { LANGUE } from '../../../types/parameter/parameter';
 import { useCostTicketsGLPI } from '../../../hooks/costs/useCostTicketsGLPI';
 import { TraiteTickets, type traitementTickets } from '../../../hooks/tickets/useTickets';
+import { mode } from '../../../hooks/mode/mode';
 export function TicketKanban() {
     const { allTickets, statusUtiliser, Parameters, loading, error } = useTicketKanban();
     const { create: createTicket, loading: creationLoading, error: creationError } = useCreateTicket();
@@ -14,7 +15,7 @@ export function TicketKanban() {
     const { categories } = useCategory();
 
     const [localTickets, setLocalTickets] = useState<any[]>([]);
-
+    const [modeChoisie ,setModeChoisie] = useState<number | null>(null)
     const [prixCloture, setPrixCloture] = useState<string>("");
     const { getCostByTickets } = useCostTicketsGLPI();
     const { traiterLigneTicket } = TraiteTickets();
@@ -502,7 +503,7 @@ export function TicketKanban() {
                                                 Tickets: String(selectedTicket.id),
                                                 mvt: "close",
                                                 valeur: String(prixCloture)
-                                            } as traitementTickets);
+                                            } as traitementTickets,modeChoisie?modeChoisie:0);
                                         } catch (error: any) {
                                             console.error("Erreur lors de la clôture des coûts : " + error.message);
                                             alert("Erreur lors du calcul ou de l'enregistrement des coûts.");
@@ -532,6 +533,15 @@ export function TicketKanban() {
                             <h1>Reouverture</h1>
                             <label htmlFor="a">Pourcentage</label>
                             <input type="number" name="" id="" defaultValue={0} onChange={(e) => setPourcentage(Number(e.target.value))} />
+                            <select
+                                onChange={(e) => setModeChoisie(Number(e.target.value))}
+                            >
+                                {Object.entries(mode).map(([key, value]) => (
+                                    <option key={key} value={value}>
+                                        {key}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                         <div className="modal-actions" style={{ marginTop: '15px' }}>
                             <button
@@ -551,11 +561,12 @@ export function TicketKanban() {
                                 onClick={async () => {
                                     const totalItems = linkedItems.length > 0 ? linkedItems.length : 1;
                                     await traiterLigneTicket(selectedTicket.id, {
-                                                Tickets: String(selectedTicket.id),
-                                                mvt: "cancel",
-                                                valeur: String(0)
-                                            } as traitementTickets);
+                                        Tickets: String(selectedTicket.id),
+                                        mvt: "cancel",
+                                        valeur: String(0)
+                                    } as traitementTickets,modeChoisie?modeChoisie:0);
                                     await proceedStatusUpdate(selectedTicket, 2);
+                                    setModeChoisie(null);
                                     setIsClosed(false);
                                     setReouvre(false);
                                     setSelectedTicket(null);
@@ -576,7 +587,7 @@ export function TicketKanban() {
                                                 Tickets: String(selectedTicket.id),
                                                 mvt: "open",
                                                 valeur: String(pourcentage)
-                                            } as traitementTickets);
+                                            } as traitementTickets,modeChoisie?modeChoisie:0);
                                         } catch (error: any) {
                                             console.error("Erreur lors de l'application des coûts de réouverture :", error.message);
                                         } finally {

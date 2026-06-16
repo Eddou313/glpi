@@ -20,13 +20,13 @@ export const donner: Record<string, number> = {
 
 export function useImportTest() {
     const { getCostByTickets } = useCostTicketsGLPI();
-    const { getByTickets, upsert, RemoveForce } = useConsts();
+    const { getByTickets, upsert, RemoveForce ,getByTicketsFirst,getByTicketsAll,getByTicketsAllTotal} = useConsts();
 
     const traiterLigneTicket = async (idTickets: number, row: colonneCSV["fichier4"]) => {
         console.log("id : " + idTickets);
-
         const valeur = Number(row.valeur);
         console.log("cout csv :", valeur);
+        const mode = Number(row.mode);
 
         const relations = await TicketServiceFront.getLinkedItems(idTickets);
         const reelGLPI = await getCostByTickets(idTickets);
@@ -40,12 +40,30 @@ export function useImportTest() {
         const prixParItemsGLPI = coutTotalGLPI / totalItems;
 
         if (row.mvt === "open") {
-            const dernierSuperCost = await getByTickets(idTickets, type_cout_mapping.SUPER_COST, totalItems);
-            console.log("Open et dernier cout super:", dernierSuperCost?.cost);
+            let reelCost = 0;
+            if (mode === 2) {
+                const firstSuperCost = await getByTicketsFirst(idTickets, type_cout_mapping.SUPER_COST, totalItems);
+                reelCost = Number(firstSuperCost?.cost || 0);
+            }
+            else if (mode === 3) {
+                const MoyenneSuperCost = await getByTicketsAll(idTickets, type_cout_mapping.SUPER_COST, totalItems);
+                const total = await getByTicketsAllTotal(idTickets, type_cout_mapping.SUPER_COST, totalItems);
+                reelCost = Number(MoyenneSuperCost?.cost || 0) / Number(total);
+            }
+            else if (mode === 4) {
+                const allSuperCost = await getByTicketsAll(idTickets, type_cout_mapping.SUPER_COST, totalItems);
+                reelCost = Number(allSuperCost?.cost || 0);
+            }
+            else {
+                const dernierSuperCost = await getByTickets(idTickets, type_cout_mapping.SUPER_COST, totalItems);
+                reelCost = dernierSuperCost?.cost || 0;
+            }
+            // const dernierSuperCost = await getByTickets(idTickets, type_cout_mapping.SUPER_COST, totalItems);
+            // console.log("Open et dernier cout super:", dernierSuperCost?.cost);
 
-            const ouverture = (valeur * Number(dernierSuperCost?.cost || 0)) / 100;
-            console.log("Open et ouverture global", ouverture);
-
+            // const ouverture = (valeur * Number(dernierSuperCost?.cost || 0)) / 100;
+            // console.log("Open et ouverture global", ouverture);
+            const ouverture = (valeur * Number(reelCost)) / 100;
             const parItem = ouverture / totalItems;
             console.log("Open et ouverture par items:", parItem);
 
@@ -57,7 +75,7 @@ export function useImportTest() {
                 await upsert(idTickets, parItem, type_cout_mapping.OUVERTURE, "Réouverture globale", null);
             }
             await TicketServiceFront.updateStatus(idTickets, 2);
-        } 
+        }
         else if (row.mvt === "cancel") {
             console.log("cancel avec total Items cancel: " + totalItems);
             await RemoveForce(idTickets, type_cout_mapping.SUPER_COST, totalItems);
@@ -98,5 +116,5 @@ export function useImportTest() {
         console.log("vita tompoko");
     };
 
-    return { Importer ,traiterLigneTicket};
+    return { Importer, traiterLigneTicket };
 }
