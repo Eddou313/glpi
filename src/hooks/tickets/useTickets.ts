@@ -1,14 +1,22 @@
 import { useEffect, useState, useCallback } from "react";
 import { glpiFetch, glpiFetchV1 } from "../../api/db_glpi";
 import type { GLPITicketListe, GLPITicketDetail } from "../../types/tickets/tickets.types";
+import { TicketServiceFront } from "../FrontOffice/tickets/useCreateTickets";
+import { useCostTicketsGLPI } from "../costs/useCostTicketsGLPI";
+import { type_cout_mapping, useConsts } from "../costs/useCosts";
 
+export interface traitementTickets {
+  Tickets: string;
+  mvt: string;
+  valeur: string;
+}
 export const TicketService = {
   getAll: (page: number, limit: number) => {
     const start = (page - 1) * limit;
     const end = start + limit - 1;
 
     return glpiFetchV1<GLPITicketListe[]>(
-      "GET", 
+      "GET",
       `Ticket?range=${start}-${end}&forcedisplay=status,type,priority`
     );
   },
@@ -29,9 +37,9 @@ export function useTickets(initialPage = 1, limit = 10) {
       setLoading(true);
       setError(null);
       const data = await TicketService.getAll(currentPage, limit);
-      
+
       setTickets(data);
-      
+
       if (data.length < limit) {
         setHasMore(false);
       } else {
@@ -58,14 +66,77 @@ export function useTickets(initialPage = 1, limit = 10) {
     }
   }
 
-  return { 
-    tickets, 
-    loading, 
-    error, 
-    page, 
-    setPage, 
-    hasMore, 
-    reload: () => load(page), 
-    detail 
+  return {
+    tickets,
+    loading,
+    error,
+    page,
+    setPage,
+    hasMore,
+    reload: () => load(page),
+    detail
   };
 }
+
+
+export function TraiteTickets() {
+  const { getCostByTickets } = useCostTicketsGLPI();
+  const { getByTickets, upsert, RemoveForce } = useConsts();
+
+  const traiterLigneTicket = async (idTickets: number, row: traitementTickets) => {
+    console.log("id : " + idTickets);
+    const valeur = Number(row.valeur);
+    const relations = await TicketServiceFront.getLinkedItems(idTickets);
+    const reelGLPI = await getCostByTickets(idTickets);
+    const coutTotalGLPI = reelGLPI?.cost_Total || 0;
+
+    const totalItems = relations.length > 0 ? relations.length : 1;
+
+    const prixParItems = valeur / totalItems;
+    const prixParItemsGLPI = coutTotalGLPI / totalItems;
+
+    if (row.mvt === "open") {
+      const dernierSuperCost = await getByTickets(idTickets, type_cout_mapping.SUPER_COST, totalItems);
+
+      const ouverture = (valeur * Number(dernierSuperCost?.cost || 0)) / 100;
+
+      const parItem = ouverture / totalItems;
+      if (relations.length > 0) {
+        for (const item of relations) {
+          await upsert(idTickets, parItem, type_cout_mapping.OUVERTURE, item.itemtype, item.items_id);
+        }
+      } else {
+        await upsert(idTickets, parItem, type_cout_mapping.OUVERTURE, "Réouverture globale", null);
+      }
+      await TicketServiceFront.updateStatus(idTickets, 2);
+    }
+    else if (row.mvt === "cancel") {
+      console.log("cancel avec total Items cancel: " + totalItems);
+      await RemoveForce(idTickets, type_cout_mapping.SUPER_COST, totalItems);
+      await TicketServiceFront.updateStatus(idTickets, 2);
+    }
+    else {
+      try {
+        console.log("cout csv :", valeur);
+        console.log("cout reel GLPI par items :", prixParItemsGLPI);
+
+        if (relations.length > 0) {
+          for (const item of relations) {
+            await upsert(idTickets, prixParItems, type_cout_mapping.SUPER_COST, item.itemtype, item.items_id);
+            await upsert(idTickets, prixParItemsGLPI, type_cout_mapping.GLPI, item.itemtype, item.items_id);
+          }
+        } else {
+          await upsert(idTickets, valeur, type_cout_mapping.SUPER_COST, "", null);
+          await upsert(idTickets, coutTotalGLPI, type_cout_mapping.GLPI, "", null);
+        }
+        await TicketServiceFront.updateStatus(idTickets, 6, "Clôture via import CSV");
+      } catch (error: any) {
+        console.error("Erreur lors de la clôture des coûts : " + error.message);
+        alert("Erreur lors du calcul ou de l'enregistrement des coûts.");
+      }
+    }
+    console.log("------------------------------");
+  };
+  return {traiterLigneTicket}
+}
+
