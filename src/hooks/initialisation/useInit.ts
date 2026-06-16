@@ -5,6 +5,7 @@ import { deleteAllDropdowns } from './deleteAll';
 import { MODEL_ENDPOINT_MAP } from '../import/fichier1_test/features/glpi';
 import { importCache } from '../../hooks/import/fichier1_test/features/service/importCaches';
 import { deleteAllStates } from '../state/useState';
+import { api } from '../../api/https';
 
 type StepStatus = 'pending' | 'running' | 'done' | 'error';
 
@@ -46,7 +47,7 @@ async function deleteAllOf(path: string): Promise<number> {
       await glpiFetch(
         'DELETE',
         `${path}/${item.id}?force=true`,
-        { input: { id: item.id }}
+        { input: { id: item.id } }
       );
       deleted++;
     } catch {
@@ -56,6 +57,15 @@ async function deleteAllOf(path: string): Promise<number> {
 
   return deleted;
 }
+
+async function deleteAll() {
+  try {
+    await api.delete(`/Cost/forceAll/`);
+  } catch (erreur: any) {
+    console.error("Erreur Remove : " + erreur.message);
+    throw new Error(erreur.message);
+  }
+};
 
 async function deleteAllUsersExceptSystem(): Promise<number> {
   const users = await glpiGet<any[]>(
@@ -90,7 +100,7 @@ async function deleteAllUsersExceptSystem(): Promise<number> {
       await glpiFetch(
         'DELETE',
         `Administration/User/${user.id}?force=true`,
-        { input: { id: user.id }}
+        { input: { id: user.id } }
       );
 
       deleted++;
@@ -214,17 +224,12 @@ export function useDeleteAllData() {
           'Dropdowns/Manufacturer'
         );
 
-      steps[manufacturerStepIndex].status =
-        'done';
-
-      steps[manufacturerStepIndex].detail =
-        `${deletedManufacturers} fabricant(s) supprimé(s)`;
+      steps[manufacturerStepIndex].status ='done';
+      steps[manufacturerStepIndex].detail =`${deletedManufacturers} fabricant(s) supprimé(s)`;
 
       refresh();
 
-      const modelStepIndex =
-        RESOURCES.length + 3;
-
+      const modelStepIndex =RESOURCES.length + 3;
       steps[modelStepIndex].status = 'running';
       refresh();
 
@@ -250,6 +255,8 @@ export function useDeleteAllData() {
         }
       }
 
+      deleteAll();
+
       steps[modelStepIndex].status = 'done';
       steps[modelStepIndex].detail =
         `${deletedModels} modèle(s) supprimé(s)`;
@@ -268,7 +275,7 @@ export function useDeleteAllData() {
       setState({
         running: false,
         done: false,
-        error:err?.message ??'Erreur inconnue',
+        error: err?.message ?? 'Erreur inconnue',
         steps: [...steps],
       });
 

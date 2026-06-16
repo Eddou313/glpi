@@ -580,12 +580,12 @@ export function TicketKanban() {
                                 onClick={async () => {
                                     if (pendingStatusId !== null) {
                                         try {
-                                            const dernierSuperCost = await getByTickets(selectedTicket.id, type_cout_mapping.SUPER_COST);
+                                            const totalItems = linkedItems.length > 0 ? linkedItems.length : 1;
+                                            const dernierSuperCost = await getByTickets(selectedTicket.id, type_cout_mapping.SUPER_COST,totalItems);
                                             const coutInitial = dernierSuperCost ? (Number(dernierSuperCost.cost) || 0) : 0;
                                             const reel = (Number(pourcentage) * coutInitial) / 100;
-                                            console.log("cout reel :", reel);
-                                            const totalItems = linkedItems.length > 0 ? linkedItems.length : 1;
                                             const prixParItems = reel / totalItems;
+                                            console.log("cout reel :", reel);
                                             if (linkedItems.length > 0) {
                                                 for (const item of linkedItems) {
                                                     await upsert(selectedTicket.id, prixParItems, type_cout_mapping.OUVERTURE, item.itemtype, item.items_id);

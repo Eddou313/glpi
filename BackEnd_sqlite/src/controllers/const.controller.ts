@@ -13,11 +13,12 @@ export const getAllCost = (req: Request, res: Response) => {
 export const getCostTickets = (req: Request, res: Response) => { 
     const ticket_id = Number(req.params.ticket_id);
     const type_cout = Number(req.query.type_cout);
+    const nbrItems = Number(req.query.nbrItems);
     try {
         if (isNaN(ticket_id) || isNaN(type_cout)) {
             return res.status(400).json({ error: "L'identifiant du ticket ou le type de coût est invalide." });
         }
-        const cost = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ? ').all(ticket_id, type_cout);
+        const cost = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ? ORDER BY id DESC LIMIT ?').all(ticket_id, type_cout,nbrItems);
         res.json(cost || []);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -41,7 +42,7 @@ export const upsterConst = (req: Request, res: Response) => {
 
         if(type_cout === 1)
         {
-            const existingCost = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ? AND id_items =?').get(id, typeCoutId,id_items);
+            const existingCost = db.prepare('SELECT * FROM cost WHERE ticket_id = ?  AND id_items =? AND type_cout = ?').get(id, id_items,typeCoutId);
             if (existingCost) {
                 db.prepare(`
                     UPDATE cost 
@@ -57,7 +58,6 @@ export const upsterConst = (req: Request, res: Response) => {
         }
         else
         {
-            const existingCost = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ? AND id_items =?').get(id, typeCoutId,id_items);
             db.prepare(`
                 INSERT INTO cost (ticket_id, cost, id_items, category, type_cout) 
                 VALUES (?, ?, ?, ?, ?)
@@ -127,6 +127,16 @@ export const deleteCostForce = (req: Request, res: Response) => {
             return res.status(404).json({ error: `Coût avec le type ID ${type_cout} non trouvé pour ce ticket.` });
         }
         
+        res.status(204).send();
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+export const deleteCostForceAll = (req: Request, res: Response) => { 
+    try {
+        const info = db.prepare(`
+            DELETE * FROM cost
+        `);
         res.status(204).send();
     } catch (error: any) {
         res.status(500).json({ error: error.message });

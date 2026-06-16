@@ -36,9 +36,9 @@ export function useConsts() {
         }
     }, []);
 
-    const getByTickets = useCallback(async (ticketId: number, typeCoutId: number): Promise<TicketCost | null> => {
+    const getByTickets = useCallback(async (ticketId: number, typeCoutId: number, nbrItems : number): Promise<TicketCost | null> => {
         try {
-            const reponse = await api.get(`/Cost/${ticketId}`, { params: { type_cout: typeCoutId } });
+            const reponse = await api.get(`/Cost/${ticketId}`, { params: { type_cout: typeCoutId,nbrItems :nbrItems  } });
             if (!reponse.data || !Array.isArray(reponse.data) || reponse.data.length === 0) {
                 return null;
             }
