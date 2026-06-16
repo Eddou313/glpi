@@ -338,7 +338,7 @@ Ajout de l'heure
   const [jour, mois, annee] = dateFr.split("-");
   return `${annee}-${mois}-${jour}`;
 }
-
+  const date = new Date(ticket.created_at.replace(" ", "T"));// avec temps
 ```
 
 Ce format final est compatible avec les champs `DATE` et `DATETIME` de SQLite, PostgreSQL et MySQL.
