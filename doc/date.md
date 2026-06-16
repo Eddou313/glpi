@@ -332,5 +332,13 @@ Ajout de l'heure
     ↓
 2006-02-01 08:02:04
 ```
+### Forme Date :
+```
+  function versISO(dateFr: string): string {
+  const [jour, mois, annee] = dateFr.split("-");
+  return `${annee}-${mois}-${jour}`;
+}
+
+```
 
 Ce format final est compatible avec les champs `DATE` et `DATETIME` de SQLite, PostgreSQL et MySQL.

@@ -92,7 +92,7 @@ function ImportMvt() {
             )}
 
             <div className="import-form">
-              <div style={{ marginBottom: "20px", borderBottom: "1px solid #ccc", paddingBottom: "20px" }}>
+              {/* <div style={{ marginBottom: "20px", borderBottom: "1px solid #ccc", paddingBottom: "20px" }}>
                 <h2>Saisie manuelle</h2>
 
                 <div style={{ display: "flex", gap: "10px", marginBottom: "10px", flexDirection: "column" }}>
@@ -138,9 +138,9 @@ function ImportMvt() {
                     {JSON.stringify(donnerManuel, null, 2)};
                   </div>
                 )}
-              </div>
+              </div> */}
 
-              <FileField id="file1" label="Fichier 1 — Équipements (CSV)" accept=".csv" onChange={setCSV1} />
+              <FileField id="file1" label="Fichier 1 — Équipements (CSV)" accept=".csv,.txt" onChange={setCSV1} />
 
               <div className="import-actions">
                 <button
