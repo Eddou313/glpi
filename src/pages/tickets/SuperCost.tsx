@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { type_cout_mapping, useConsts, type TicketCost } from "../../hooks/costs/useCosts";
 import "./super.css";
+import { TicketServiceFront } from "../../hooks/FrontOffice/tickets/useCreateTickets";
+import { TicketService } from "../../hooks/tickets/useTickets";
 
 interface TypeCoutCumule {
   typeCoutId: number;
@@ -20,8 +22,7 @@ export function SuperCost() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState<string>('');
-  
-  // État pour gérer la catégorie sélectionnée dans la fenêtre flottante
+  const [ticketNames, setTicketNames] = useState<Record<number, string>>({});
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -41,6 +42,34 @@ export function SuperCost() {
     refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    if (!selectedCategory) return;
+
+    const fetchMissingTicketNames = async () => {
+      const categoryTickets = rows.filter(r => (r.category || "Sans catégorie") === selectedCategory);
+      const uniqueIds = Array.from(new Set(categoryTickets.map(r => r.ticket_id)));
+      const idsToFetch = uniqueIds.filter(id => !ticketNames[id]);
+
+      if (idsToFetch.length === 0) return;
+
+      for (const id of idsToFetch) {
+        try {
+          const ticketDetail = await TicketService.getById(id);
+          if (ticketDetail && ticketDetail.name) {
+            setTicketNames(prev => ({
+              ...prev,
+              [id]: ticketDetail.name
+            }));
+          }
+        } catch (err) {
+          console.error(`Impossible de récupérer le nom du ticket #${id}`, err);
+        }
+      }
+    };
+
+    fetchMissingTicketNames();
+  }, [selectedCategory, rows, ticketNames]);
+
   const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' Ar';
 
   const getTypeText = (typeId: number) => {
@@ -53,8 +82,8 @@ export function SuperCost() {
   };
 
   const filteredRows = useMemo(() => {
-    return rows.filter(r => 
-      r.ticket_id.toString().includes(search) || 
+    return rows.filter(r =>
+      r.ticket_id.toString().includes(search) ||
       (r.category && r.category.toLowerCase().includes(search.toLowerCase()))
     );
   }, [rows, search]);
@@ -74,7 +103,7 @@ export function SuperCost() {
       const subGroupedType = rowsInCat.reduce<Record<number, number>>((acc, row) => {
         const typeId = row.type_cout;
         if (!acc[typeId]) acc[typeId] = 0;
-        acc[typeId] += row.cost; 
+        acc[typeId] += row.cost;
         return acc;
       }, {});
 
@@ -96,10 +125,10 @@ export function SuperCost() {
   // Données prêtes pour la fenêtre flottante (Non fusionnées, détails bruts)
   const detailModalData = useMemo(() => {
     if (!selectedCategory) return null;
-    
+
     const items = filteredRows.filter(r => (r.category || "Sans catégorie") === selectedCategory);
     const subTotal = items.reduce((sum, item) => sum + item.cost, 0);
-    
+
     return {
       categoryName: selectedCategory,
       items,
@@ -114,7 +143,7 @@ export function SuperCost() {
   return (
     <div className="glpi-costs-container">
       {/* Reste du header si besoin */}
-      
+
       {error && <div className="glpi-costs-error">{error}</div>}
 
       {loading ? (
@@ -132,7 +161,7 @@ export function SuperCost() {
                 <th className="highlight-total">Montant</th>
               </tr>
             </thead>
-            
+
             {categoriesList.map((group) => (
               <tbody key={group.categoryName} className="category-group-body">
                 <tr className="category-header-row">
@@ -140,7 +169,7 @@ export function SuperCost() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span className="category-badge">CATÉGORIE : {group.categoryName.toUpperCase()}</span>
                       {/* Clic déclenche l'ouverture de la modal */}
-                      <button 
+                      <button
                         className="expand-collapse-btn"
                         onClick={() => setSelectedCategory(group.categoryName)}
                       >
@@ -149,7 +178,7 @@ export function SuperCost() {
                     </div>
                   </td>
                 </tr>
-                
+
                 {group.items.map((item) => (
                   <tr key={`${group.categoryName}-${item.typeCoutId}`}>
                     <td className="cell-id">-</td>
@@ -158,14 +187,14 @@ export function SuperCost() {
                     <td className="cell-num">{fmt(item.cost)}</td>
                   </tr>
                 ))}
-                
+
                 <tr className="category-subtotal-row">
                   <td colSpan={3} className="text-right">Sous-total <strong>{group.categoryName}</strong> :</td>
                   <td className="cell-num cell-subtotal-bold">{fmt(group.subTotal)}</td>
                 </tr>
               </tbody>
             ))}
-            
+
             <tfoot>
               <tr className="glpi-costs-foot-row">
                 <td colSpan={3}><strong>TOTAL CUMULÉ GÉNÉRAL</strong></td>
@@ -184,7 +213,7 @@ export function SuperCost() {
               <h2>Détails : {detailModalData.categoryName}</h2>
               <button className="modal-close-btn" onClick={() => setSelectedCategory(null)}>&times;</button>
             </div>
-            
+
             <div className="modal-body">
               <table className="glpi-costs-table">
                 <thead>
@@ -198,7 +227,9 @@ export function SuperCost() {
                 <tbody>
                   {detailModalData.items.map((r) => (
                     <tr key={r.id || `${r.ticket_id}-${r.type_cout}-${r.cost}`}>
-                      <td className="cell-id">#{r.ticket_id}</td>
+                      <td className="cell-id">
+                        #{r.ticket_id} - {ticketNames[r.ticket_id] || "Chargement du titre..."}
+                      </td>
                       <td className="cell-item-id">{r.id_items ? `#${r.id_items}` : '-'}</td>
                       <td className="cell-type">{getTypeText(r.type_cout)}</td>
                       <td className="cell-num">{fmt(r.cost)}</td>
