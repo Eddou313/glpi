@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { TICKET_STATUS, type Parameter } from "../../types/parameter/parameter";
-import { useParameter } from "../FrontOffice/Tickets/parameter/useParameter";
+import { useParameter } from "../../hooks/parameter/useParameter";
 import "./parameter.css"; 
 
 export function ParameterPages() {

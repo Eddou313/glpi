@@ -6,6 +6,7 @@ import { MODEL_ENDPOINT_MAP } from '../import/fichier1_test/features/glpi';
 import { importCache } from '../../hooks/import/fichier1_test/features/service/importCaches';
 import { deleteAllStates } from '../state/useState';
 import { api } from '../../api/https';
+import { useParameter } from '../parameter/useParameter';
 
 type StepStatus = 'pending' | 'running' | 'done' | 'error';
 
@@ -132,6 +133,7 @@ export function useDeleteAllData() {
     error: null,
     steps: [],
   });
+  const { deleteALl } = useParameter();
   const run = useCallback(async () => {
     const steps: Step[] = [
       ...RESOURCES.map(r => ({
@@ -256,6 +258,7 @@ export function useDeleteAllData() {
       }
 
       deleteAll();
+      // deleteALl();
 
       steps[modelStepIndex].status = 'done';
       steps[modelStepIndex].detail =

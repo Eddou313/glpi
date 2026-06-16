@@ -1,5 +1,5 @@
-import { api } from "../../../../api/https";
-import type { Parameter } from "../../../../types/parameter/parameter";
+import { api } from "../../api/https";
+import type { Parameter } from "../../types/parameter/parameter";
 
 export function useParameter() {
     const createParameter = async (parameter: Parameter) => {
@@ -22,6 +22,15 @@ export function useParameter() {
             throw new Error("Erreur lors de la recuperation des paramètre : " + erreur.message);
         }
     }
+    async function deleteALl(): Promise<void> {
+        try {
+            await api.delete("/Parameter/all");
+        }
+        catch (erreur: any) {
+            console.log("Erreur lors de la suppression des paramètres : " + erreur.message);
+            throw new Error("Erreur lors de la suppression des paramètres : " + erreur.message);
+        }
+    }
     // const getAllParameter = get();
-    return { createParameter, get };
+    return { createParameter, get, deleteALl };
 }

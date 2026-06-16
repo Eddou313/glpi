@@ -107,7 +107,8 @@ export const getIsDelete = (req: Request, res: Response) => {
 export const deleteCostForce = (req: Request, res: Response) => { 
     try {
         const id = Number(req.params.ticket_id);
-        const type_cout = Number(req.body.type_cout); 
+        const { type_cout } = req.body || {}; 
+        const typeCoutNum = Number(type_cout);
         const nbr_items = Number(req.body.nbr_items); 
         if (isNaN(id) || isNaN(type_cout)) {
             return res.status(400).json({ error: "ID ou type de coût invalide." });
@@ -122,9 +123,9 @@ export const deleteCostForce = (req: Request, res: Response) => {
                 ORDER BY id DESC
                 LIMIT ?
             )
-        `).run(id, type_cout, nbr_items);
+        `).run(id, typeCoutNum, nbr_items);
         if (info.changes === 0) {
-            return res.status(404).json({ error: `Coût avec le type ID ${type_cout} non trouvé pour ce ticket.` });
+            return res.status(404).json({ error: `Coût avec le type ID ${typeCoutNum} non trouvé pour ce ticket.` });
         }
         
         res.status(204).send();
@@ -134,9 +135,11 @@ export const deleteCostForce = (req: Request, res: Response) => {
 };
 export const deleteCostForceAll = (req: Request, res: Response) => { 
     try {
-        const info = db.prepare(`
-            DELETE * FROM cost
-        `);
+        const { type_cout } = req.body || {}; 
+        const typeCoutNum = Number(type_cout);
+        db.prepare(`
+            DELETE FROM cost
+        `).run();
         res.status(204).send();
     } catch (error: any) {
         res.status(500).json({ error: error.message });

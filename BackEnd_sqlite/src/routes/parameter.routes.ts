@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { checkParameter, createParameter, deleteParameter, getAllParameter, getLastParameter, getParameter, updateParameter } from '../controllers/parameter.controller.ts';
+import { checkParameter, createParameter, deleteParameter, deleteParameterAll, getAllParameter, getLastParameter, getParameter, updateParameter } from '../controllers/parameter.controller.ts';
 const router = Router();
 
 router.get('/Parameters', getAllParameter);
@@ -11,4 +11,7 @@ router.get('/', getLastParameter);
 router.post('/', createParameter);
 router.put('/:id', updateParameter);
 router.delete('/:id', deleteParameter);
+router.delete('/all', deleteParameterAll);
+
+
 export default router;

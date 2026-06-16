@@ -4,7 +4,7 @@ import { glpiGet, glpiPost } from "../../../api/db_client";
 import { glpiGetV1, glpiPostV1, glpiPutV1 } from "../../../api/db_glpi";
 import type { GlpiAsset } from "../../../types/elements/items.types";
 import { TICKET_STATUS, type Parameter } from "../../../types/parameter/parameter";
-import { useParameter } from "../../../pages/FrontOffice/Tickets/parameter/useParameter";
+import { useParameter } from "../../parameter/useParameter";
 export interface LinkedItems 
 {
   id : number;

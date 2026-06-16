@@ -96,3 +96,9 @@ export const deleteParameter = (req: Request, res: Response) => {
   if (info.changes === 0) return res.status(404).json({ error: 'Kanban status not found' });
   res.status(204).send();
 };
+
+export const deleteParameterAll = (req: Request, res: Response) => {
+  const info = db.prepare('DELETE FROM kanban_statuses').run();
+  if (info.changes === 0) return res.status(404).json({ error: 'Kanban status not found' });
+  res.status(204).send();
+};

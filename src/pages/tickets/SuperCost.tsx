@@ -20,6 +20,9 @@ export function SuperCost() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState<string>('');
+  
+  // État pour gérer la catégorie sélectionnée dans la fenêtre flottante
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -56,32 +59,25 @@ export function SuperCost() {
     );
   }, [rows, search]);
 
+  // Équivalent du tableau principal (Groupé & Fusionné par Type)
   const categoriesList = useMemo<CategoryGroup[]>(() => {
-    // Étape A : Regroupement initial par nom de catégorie
     const groupedCategories = filteredRows.reduce<Record<string, TicketCost[]>>((acc, row) => {
       const catName = row.category || "Sans catégorie";
-      if (!acc[catName]) {
-        acc[catName] = [];
-      }
+      if (!acc[catName]) acc[catName] = [];
       acc[catName].push(row);
       return acc;
     }, {});
 
-    // Étape B : Transformation et fusion par type_cout à l'intérieur de chaque catégorie
     return Object.keys(groupedCategories).map(catName => {
       const rowsInCat = groupedCategories[catName];
 
-      // On fusionne les montants pour les types de coût identiques
       const subGroupedType = rowsInCat.reduce<Record<number, number>>((acc, row) => {
         const typeId = row.type_cout;
-        if (!acc[typeId]) {
-          acc[typeId] = 0;
-        }
+        if (!acc[typeId]) acc[typeId] = 0;
         acc[typeId] += row.cost; 
         return acc;
       }, {});
 
-      // Création de la liste des lignes finales pour cette catégorie
       const items: TypeCoutCumule[] = Object.keys(subGroupedType).map(typeIdStr => {
         const typeId = Number(typeIdStr);
         return {
@@ -91,40 +87,34 @@ export function SuperCost() {
         };
       });
 
-      // Calcul automatique du sous-total de la catégorie
       const subTotal = items.reduce((sum, item) => sum + item.cost, 0);
 
-      return {
-        categoryName: catName,
-        items,
-        subTotal
-      };
+      return { categoryName: catName, items, subTotal };
     });
   }, [filteredRows]);
 
-  // 3. Calcul du total général
+  // Données prêtes pour la fenêtre flottante (Non fusionnées, détails bruts)
+  const detailModalData = useMemo(() => {
+    if (!selectedCategory) return null;
+    
+    const items = filteredRows.filter(r => (r.category || "Sans catégorie") === selectedCategory);
+    const subTotal = items.reduce((sum, item) => sum + item.cost, 0);
+    
+    return {
+      categoryName: selectedCategory,
+      items,
+      subTotal
+    };
+  }, [filteredRows, selectedCategory]);
+
   const grandTotal = useMemo(() => {
     return filteredRows.reduce((sum, r) => sum + r.cost, 0);
   }, [filteredRows]);
 
   return (
     <div className="glpi-costs-container">
-      {/* Section de recherche et d'actions décommentée pour être fonctionnelle */}
-      {/* <div className="glpi-costs-header-actions">
-        <div className="glpi-costs-filter">
-          <input
-            type="text"
-            placeholder="Rechercher par #ID de ticket ou catégorie..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="glpi-costs-search"
-          />
-        </div>
-        <button onClick={refresh} className="glpi-refresh-btn" disabled={loading}>
-          {loading ? "Chargement..." : "Actualiser"}
-        </button>
-      </div> */}
-
+      {/* Reste du header si besoin */}
+      
       {error && <div className="glpi-costs-error">{error}</div>}
 
       {loading ? (
@@ -145,17 +135,23 @@ export function SuperCost() {
             
             {categoriesList.map((group) => (
               <tbody key={group.categoryName} className="category-group-body">
-                {/* Ligne d'en-tête de la Catégorie (Bandeau violet) */}
                 <tr className="category-header-row">
                   <td colSpan={4}>
-                    <span className="category-badge">CATÉGORIE : {group.categoryName.toUpperCase()}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className="category-badge">CATÉGORIE : {group.categoryName.toUpperCase()}</span>
+                      {/* Clic déclenche l'ouverture de la modal */}
+                      <button 
+                        className="expand-collapse-btn"
+                        onClick={() => setSelectedCategory(group.categoryName)}
+                      >
+                        Détail
+                      </button>
+                    </div>
                   </td>
                 </tr>
                 
-                {/* Lignes intérieures : Affichage des types de coûts uniques fusionnés */}
                 {group.items.map((item) => (
                   <tr key={`${group.categoryName}-${item.typeCoutId}`}>
-                    {/* Les IDs spécifiques individuels sont mis à '-' car les lignes sont fusionnées globalement */}
                     <td className="cell-id">-</td>
                     <td className="cell-item-id">-</td>
                     <td className="cell-type" style={{ fontWeight: 500 }}>{item.typeName}</td>
@@ -163,7 +159,6 @@ export function SuperCost() {
                   </tr>
                 ))}
                 
-                {/* Ligne du Sous-total par Catégorie */}
                 <tr className="category-subtotal-row">
                   <td colSpan={3} className="text-right">Sous-total <strong>{group.categoryName}</strong> :</td>
                   <td className="cell-num cell-subtotal-bold">{fmt(group.subTotal)}</td>
@@ -178,6 +173,47 @@ export function SuperCost() {
               </tr>
             </tfoot>
           </table>
+        </div>
+      )}
+
+      {/* --- FENÊTRE FLOTTANTE (MODAL) --- */}
+      {detailModalData && (
+        <div className="modal-overlay" onClick={() => setSelectedCategory(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Détails : {detailModalData.categoryName}</h2>
+              <button className="modal-close-btn" onClick={() => setSelectedCategory(null)}>&times;</button>
+            </div>
+            
+            <div className="modal-body">
+              <table className="glpi-costs-table">
+                <thead>
+                  <tr>
+                    <th>#Ticket</th>
+                    <th>ID Item</th>
+                    <th>Type de Coût</th>
+                    <th className="highlight-total">Montant</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detailModalData.items.map((r) => (
+                    <tr key={r.id || `${r.ticket_id}-${r.type_cout}-${r.cost}`}>
+                      <td className="cell-id">#{r.ticket_id}</td>
+                      <td className="cell-item-id">{r.id_items ? `#${r.id_items}` : '-'}</td>
+                      <td className="cell-type">{getTypeText(r.type_cout)}</td>
+                      <td className="cell-num">{fmt(r.cost)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="category-subtotal-row">
+                    <td colSpan={3} className="text-right"><strong>Sous-total</strong> :</td>
+                    <td className="cell-num cell-subtotal-bold">{fmt(detailModalData.subTotal)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
         </div>
       )}
     </div>
