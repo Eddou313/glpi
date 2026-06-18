@@ -3,7 +3,7 @@ import { glpiFetch, glpiFetchV1 } from "../../api/db_glpi";
 import type { GLPITicketListe, GLPITicketDetail } from "../../types/tickets/tickets.types";
 import { TicketServiceFront } from "../FrontOffice/tickets/useCreateTickets";
 import { useCostTicketsGLPI } from "../costs/useCostTicketsGLPI";
-import { type_cout_mapping, useConsts } from "../costs/useCosts";
+import { obtenirDateFormatee, type_cout_mapping, useConsts } from "../costs/useCosts";
 
 export interface traitementTickets {
   Tickets: string;
@@ -81,9 +81,11 @@ export function useTickets(initialPage = 1, limit = 10) {
 
 export function TraiteTickets() {
   const { getCostByTickets } = useCostTicketsGLPI();
-  const { getByTickets, upsert, RemoveForce, getByTicketsFirst, getByTicketsAll ,getByTicketsAllTotal} = useConsts();
+  const { getByTickets, upsert, RemoveForce, getByTicketsFirst, getByTicketsAll, getByTicketsAllTotal } = useConsts();
 
   const traiterLigneTicket = async (idTickets: number, row: traitementTickets, mode: number) => {
+    const dateAujourdhui = obtenirDateFormatee();
+
     console.log("id : " + idTickets);
     const valeur = Number(row.valeur);
     const relations = await TicketServiceFront.getLinkedItems(idTickets);
@@ -103,10 +105,10 @@ export function TraiteTickets() {
       }
       else if (mode === 3) {
         const MoyenneSuperCost = await getByTicketsAll(idTickets, type_cout_mapping.SUPER_COST, totalItems);
-        const total  = await getByTicketsAllTotal(idTickets, type_cout_mapping.SUPER_COST, totalItems);
-        reelCost = Number(MoyenneSuperCost?.cost || 0)/Number(total?total:1);
-        console.log("moyenne"+MoyenneSuperCost?.cost);
-        console.log("mode 3:"+reelCost);
+        const total = await getByTicketsAllTotal(idTickets, type_cout_mapping.SUPER_COST, totalItems);
+        reelCost = Number(MoyenneSuperCost?.cost || 0) / Number(total ? total : 1);
+        console.log("moyenne" + MoyenneSuperCost?.cost);
+        console.log("mode 3:" + reelCost);
       }
       else if (mode === 4) {
         const allSuperCost = await getByTicketsAll(idTickets, type_cout_mapping.SUPER_COST, totalItems);
@@ -116,18 +118,17 @@ export function TraiteTickets() {
         const dernierSuperCost = await getByTickets(idTickets, type_cout_mapping.SUPER_COST, totalItems);
         reelCost = dernierSuperCost?.cost || 0;
       }
-      if(reelCost<0)
-      {
+      if (reelCost < 0) {
         reelCost = 0;
       }
       const ouverture = (valeur * Number(reelCost)) / 100;
       const parItem = ouverture / totalItems;
       if (relations.length > 0) {
         for (const item of relations) {
-          await upsert(idTickets, parItem, type_cout_mapping.OUVERTURE, item.itemtype, item.items_id);
+          await upsert(idTickets, parItem, type_cout_mapping.OUVERTURE, item.itemtype, item.items_id, dateAujourdhui);
         }
       } else {
-        await upsert(idTickets, parItem, type_cout_mapping.OUVERTURE, "Réouverture globale", null);
+        await upsert(idTickets, parItem, type_cout_mapping.OUVERTURE, "Réouverture globale", null, dateAujourdhui);
       }
       await TicketServiceFront.updateStatus(idTickets, 2);
     }
@@ -143,12 +144,12 @@ export function TraiteTickets() {
 
         if (relations.length > 0) {
           for (const item of relations) {
-            await upsert(idTickets, prixParItems, type_cout_mapping.SUPER_COST, item.itemtype, item.items_id);
-            await upsert(idTickets, prixParItemsGLPI, type_cout_mapping.GLPI, item.itemtype, item.items_id);
+            await upsert(idTickets, prixParItems, type_cout_mapping.SUPER_COST, item.itemtype, item.items_id, dateAujourdhui);
+            await upsert(idTickets, prixParItemsGLPI, type_cout_mapping.GLPI, item.itemtype, item.items_id, dateAujourdhui);
           }
         } else {
-          await upsert(idTickets, valeur, type_cout_mapping.SUPER_COST, "", null);
-          await upsert(idTickets, coutTotalGLPI, type_cout_mapping.GLPI, "", null);
+          await upsert(idTickets, valeur, type_cout_mapping.SUPER_COST, "", null, dateAujourdhui);
+          await upsert(idTickets, coutTotalGLPI, type_cout_mapping.GLPI, "", null, dateAujourdhui);
         }
         await TicketServiceFront.updateStatus(idTickets, 6, "Clôture via import CSV");
       } catch (error: any) {

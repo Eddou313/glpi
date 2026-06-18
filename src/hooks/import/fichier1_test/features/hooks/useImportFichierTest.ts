@@ -1,5 +1,5 @@
 import type { colonneCSV } from "../../../../../types/import/fichier";
-import { type_cout_mapping, useConsts } from "../../../../costs/useCosts";
+import { obtenirDateFormatee, type_cout_mapping, useConsts } from "../../../../costs/useCosts";
 import { useCostTicketsGLPI } from "../../../../costs/useCostTicketsGLPI";
 import { TicketServiceFront } from "../../../../FrontOffice/tickets/useCreateTickets";
 import { importCache } from "../service/importCaches";
@@ -23,6 +23,7 @@ export function useImportTest() {
     const { getByTickets, upsert, RemoveForce, getByTicketsFirst, getByTicketsAll, getByTicketsAllTotal } = useConsts();
 
     const traiterLigneTicket = async (idTickets: number, row: colonneCSV["fichier4"]) => {
+        const dateAujourdhui = obtenirDateFormatee();
         console.log("id : " + idTickets);
         const valeur = Number(row.valeur);
         console.log("cout csv :", valeur);
@@ -31,10 +32,8 @@ export function useImportTest() {
         const relations = await TicketServiceFront.getLinkedItems(idTickets);
         const reelGLPI = await getCostByTickets(idTickets);
         const coutTotalGLPI = reelGLPI?.cost_Total || 0;
-        console.log("cout reel GLPI :", coutTotalGLPI);
 
         const totalItems = relations.length > 0 ? relations.length : 1;
-        console.log("total items:", totalItems);
 
         const prixParItems = valeur / totalItems;
         const prixParItemsGLPI = coutTotalGLPI / totalItems;
@@ -48,9 +47,9 @@ export function useImportTest() {
             else if (mode === 3) {
                 const MoyenneSuperCost = await getByTicketsAll(idTickets, type_cout_mapping.SUPER_COST, totalItems);
                 const total = await getByTicketsAllTotal(idTickets, type_cout_mapping.SUPER_COST, totalItems);
-                reelCost = Number(MoyenneSuperCost?.cost || 0) / Number(total ? total : 1);
-                console.log("moyenne"+MoyenneSuperCost?.cost);
-                console.log("total"+total);
+                reelCost = Number(MoyenneSuperCost?.cost || 0) / Number(total || 1);
+                console.log("total Super cost "+MoyenneSuperCost?.cost);
+                console.log("super Cost diviseur :"+total);
                 console.log("mode 3:" + reelCost);
 
             }
@@ -62,21 +61,20 @@ export function useImportTest() {
                 const dernierSuperCost = await getByTickets(idTickets, type_cout_mapping.SUPER_COST, totalItems);
                 reelCost = dernierSuperCost?.cost || 0;
             }
-            // const dernierSuperCost = await getByTickets(idTickets, type_cout_mapping.SUPER_COST, totalItems);
-            // console.log("Open et dernier cout super:", dernierSuperCost?.cost);
 
-            // const ouverture = (valeur * Number(dernierSuperCost?.cost || 0)) / 100;
-            // console.log("Open et ouverture global", ouverture);
             const ouverture = (valeur * Number(reelCost)) / 100;
             const parItem = ouverture / totalItems;
+
+            console.log("items:", totalItems);
+            console.log("Open et ouverture global:", ouverture);
             console.log("Open et ouverture par items:", parItem);
 
             if (relations.length > 0) {
                 for (const item of relations) {
-                    await upsert(idTickets, parItem, type_cout_mapping.OUVERTURE, item.itemtype, item.items_id);
+                    await upsert(idTickets, parItem, type_cout_mapping.OUVERTURE, item.itemtype, item.items_id,dateAujourdhui);
                 }
             } else {
-                await upsert(idTickets, parItem, type_cout_mapping.OUVERTURE, "Réouverture globale", null);
+                await upsert(idTickets, parItem, type_cout_mapping.OUVERTURE, "Réouverture globale", null,dateAujourdhui);
             }
             await TicketServiceFront.updateStatus(idTickets, 2);
         }
@@ -92,12 +90,12 @@ export function useImportTest() {
 
                 if (relations.length > 0) {
                     for (const item of relations) {
-                        await upsert(idTickets, prixParItems, type_cout_mapping.SUPER_COST, item.itemtype, item.items_id);
-                        await upsert(idTickets, prixParItemsGLPI, type_cout_mapping.GLPI, item.itemtype, item.items_id);
+                        await upsert(idTickets, prixParItems, type_cout_mapping.SUPER_COST, item.itemtype, item.items_id,dateAujourdhui);
+                        await upsert(idTickets, prixParItemsGLPI, type_cout_mapping.GLPI, item.itemtype, item.items_id,dateAujourdhui);
                     }
                 } else {
-                    await upsert(idTickets, valeur, type_cout_mapping.SUPER_COST, "", null);
-                    await upsert(idTickets, coutTotalGLPI, type_cout_mapping.GLPI, "", null);
+                    await upsert(idTickets, valeur, type_cout_mapping.SUPER_COST, "", null,dateAujourdhui);
+                    await upsert(idTickets, coutTotalGLPI, type_cout_mapping.GLPI, "", null,dateAujourdhui);
                 }
                 await TicketServiceFront.updateStatus(idTickets, 6, "Clôture via import CSV");
             } catch (error: any) {
