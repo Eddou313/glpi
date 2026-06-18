@@ -192,7 +192,7 @@ export function useConsts() {
             return null;
         }
     }, []);
-
+    //nombre super cost deja enregistrer 
     const getByTicketsAllTotal = useCallback(async (ticketId: number, typeCoutId: number, nbrItems: number): Promise<number | null> => {
         try {
             const reponse = await api.get(`/Cost/all/${ticketId}`, { params: { type_cout: typeCoutId, nbrItems: nbrItems } });
