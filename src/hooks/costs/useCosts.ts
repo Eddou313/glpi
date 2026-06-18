@@ -202,7 +202,18 @@ export function useConsts() {
             }
 
             const data: TicketCost[] = reponse.data;
+            // --- Début de la logique avec boucle for ---
+            // const groupesUniques: string[] = [];
 
+            // for (let i = 0; i < data.length; i++) {
+            //     const groupeActuel = data[i].group;
+
+            //     // Si le groupe existe et n'est pas encore dans notre tableau de référence
+            //     if (groupeActuel && !groupesUniques.includes(groupeActuel)) {
+            //         groupesUniques.push(groupeActuel);
+            //     }
+            // }
+            // --- Fin de la logique ---
             // 1. On extrait uniquement les valeurs de la propriété 'group'
             // 2. On filtre pour enlever les valeurs vides, nulles ou undefined si nécessaire
             const listeGroupes = data.map(item => item.group).filter(group => group !== null && group !== undefined && group !== "");
