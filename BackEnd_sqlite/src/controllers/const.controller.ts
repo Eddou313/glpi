@@ -37,6 +37,32 @@ function getNullableNumber(value: unknown) {
     return Number.isFinite(parsed) ? parsed : null;
 }
 
+function getBatch(value: string | null) {
+    return value || '';
+}
+
+function getRowsByBatch(ticketId: number, typeCout: number, group: string | null) {
+    return db.prepare(`
+        ${COST_SELECT}
+        WHERE ticket_id = ?
+          AND type_cout = ?
+          AND COALESCE("group", '') = COALESCE(?, '')
+          AND COALESCE(is_deleted, false) = false
+        ORDER BY id ASC
+    `).all(ticketId, typeCout, group) as CostRow[];
+}
+
+function distributeBatchCost(rows: CostRow[], totalCost: number) {
+    if (rows.length === 0) return;
+
+    const costByRow = totalCost / rows.length;
+    const update = db.prepare(`UPDATE cost SET cost = ? WHERE id = ?`);
+
+    for (const row of rows) {
+        update.run(costByRow, row.id);
+    }
+}
+
 function getSuperCostGroupCount(ticketId: number) {
     const row = db.prepare(`
         SELECT COUNT(*) AS total
@@ -53,8 +79,13 @@ function getSuperCostGroupCount(ticketId: number) {
     return Math.max(Number(row?.total || 1), 1);
 }
 
-function getSuperCostBase(ticketId: number, mode: number, totalItems: number) {
+function getSuperCostBase(ticketId: number, mode: number, totalItems: number, ouvertureGroup?: string | null) {
     const limit = Math.max(totalItems, 1);
+    const groupLimit = getBatch(ouvertureGroup || null);
+    const groupFilter = groupLimit
+        ? 'AND COALESCE("group", \'\') <= ?'
+        : '';
+    const groupParams = groupLimit ? [groupLimit] : [];
 
     if (mode === 2) {
         const rows = db.prepare(`
@@ -63,9 +94,10 @@ function getSuperCostBase(ticketId: number, mode: number, totalItems: number) {
             WHERE ticket_id = ?
               AND type_cout = ?
               AND COALESCE(is_deleted, false) = false
-            ORDER BY id ASC
+              ${groupFilter}
+            ORDER BY COALESCE("group", '') ASC, id ASC
             LIMIT ?
-        `).all(ticketId, TYPE_COUT.SUPER_COST, limit) as CostRow[];
+        `).all(ticketId, TYPE_COUT.SUPER_COST, ...groupParams, limit) as CostRow[];
 
         return rows.reduce((sum, row) => sum + Number(row.cost || 0), 0);
     }
@@ -77,9 +109,23 @@ function getSuperCostBase(ticketId: number, mode: number, totalItems: number) {
             WHERE ticket_id = ?
               AND type_cout = ?
               AND COALESCE(is_deleted, false) = false
-        `).get(ticketId, TYPE_COUT.SUPER_COST) as { total?: number } | undefined;
+              ${groupFilter}
+        `).get(ticketId, TYPE_COUT.SUPER_COST, ...groupParams) as { total?: number } | undefined;
 
-        return Number(row?.total || 0) / getSuperCostGroupCount(ticketId);
+        const countRow = db.prepare(`
+            SELECT COUNT(*) AS total
+            FROM (
+                SELECT COALESCE("group", id) AS group_key
+                FROM cost
+                WHERE ticket_id = ?
+                  AND type_cout = ?
+                  AND COALESCE(is_deleted, false) = false
+                  ${groupFilter}
+                GROUP BY COALESCE("group", id)
+            )
+        `).get(ticketId, TYPE_COUT.SUPER_COST, ...groupParams) as { total?: number } | undefined;
+
+        return Number(row?.total || 0) / Math.max(Number(countRow?.total || 1), 1);
     }
 
     if (mode === 4) {
@@ -89,7 +135,8 @@ function getSuperCostBase(ticketId: number, mode: number, totalItems: number) {
             WHERE ticket_id = ?
               AND type_cout = ?
               AND COALESCE(is_deleted, false) = false
-        `).get(ticketId, TYPE_COUT.SUPER_COST) as { total?: number } | undefined;
+              ${groupFilter}
+        `).get(ticketId, TYPE_COUT.SUPER_COST, ...groupParams) as { total?: number } | undefined;
 
         return Number(row?.total || 0);
     }
@@ -100,9 +147,10 @@ function getSuperCostBase(ticketId: number, mode: number, totalItems: number) {
         WHERE ticket_id = ?
           AND type_cout = ?
           AND COALESCE(is_deleted, false) = false
-        ORDER BY id DESC
+          ${groupFilter}
+        ORDER BY COALESCE("group", '') DESC, id DESC
         LIMIT ?
-    `).all(ticketId, TYPE_COUT.SUPER_COST, limit) as CostRow[];
+    `).all(ticketId, TYPE_COUT.SUPER_COST, ...groupParams, limit) as CostRow[];
 
     return rows.reduce((sum, row) => sum + Number(row.cost || 0), 0);
 }
@@ -122,7 +170,7 @@ function recalculateOuvertureGroup(ticketId: number, group: string | null) {
     const first = ouvertures[0]!;
     const percentage = Number(first.percentage || 0);
     const mode = Number(first.mode_ouverture || 1);
-    const base = getSuperCostBase(ticketId, mode, ouvertures.length);
+    const base = getSuperCostBase(ticketId, mode, ouvertures.length, first.group);
     const totalOuverture = (percentage * base) / 100;
     const costByItem = totalOuverture / Math.max(ouvertures.length, 1);
 
@@ -143,6 +191,24 @@ function recalculateOuverturesForTicket(ticketId: number) {
     `).all(ticketId, TYPE_COUT.OUVERTURE) as Array<{ group_key: string }>;
 
     for (const row of groups) {
+        recalculateOuvertureGroup(ticketId, row.group_key || null);
+    }
+}
+
+function recalculateOuverturesAfterGroup(ticketId: number, group: string | null) {
+    const groupStart = getBatch(group);
+    const rows = db.prepare(`
+        SELECT COALESCE("group", '') AS group_key
+        FROM cost
+        WHERE ticket_id = ?
+          AND type_cout = ?
+          AND COALESCE(is_deleted, false) = false
+          AND COALESCE("group", '') >= ?
+        GROUP BY COALESCE("group", '')
+        ORDER BY COALESCE("group", '') ASC
+    `).all(ticketId, TYPE_COUT.OUVERTURE, groupStart) as Array<{ group_key: string }>;
+
+    for (const row of rows) {
         recalculateOuvertureGroup(ticketId, row.group_key || null);
     }
 }
@@ -430,32 +496,32 @@ export const updateSuperCostOrReouverture = (req: Request, res: Response) => {
         }
 
         if (current.type_cout === TYPE_COUT.SUPER_COST) {
+            const batchRows = getRowsByBatch(current.ticket_id, TYPE_COUT.SUPER_COST, current.group);
+            distributeBatchCost(batchRows, getNumber(cost, current.cost));
+
             db.prepare(`
                 UPDATE cost
-                SET cost = ?, percentage = 100, mode_ouverture = NULL
-                WHERE id = ?
-            `).run(getNumber(cost), id);
-
-            recalculateOuverturesForTicket(current.ticket_id);
-        }
-
-        if (current.type_cout === TYPE_COUT.OUVERTURE) {
-            const groupRows = db.prepare(`
-                ${COST_SELECT}
+                SET percentage = 100, mode_ouverture = NULL
                 WHERE ticket_id = ?
                   AND type_cout = ?
                   AND COALESCE("group", '') = COALESCE(?, '')
                   AND COALESCE(is_deleted, false) = false
-            `).all(current.ticket_id, TYPE_COUT.OUVERTURE, current.group) as CostRow[];
+            `).run(current.ticket_id, TYPE_COUT.SUPER_COST, current.group);
+
+            recalculateOuverturesAfterGroup(current.ticket_id, current.group);
+        }
+
+        if (current.type_cout === TYPE_COUT.OUVERTURE) {
+            const groupRows = getRowsByBatch(current.ticket_id, TYPE_COUT.OUVERTURE, current.group);
 
             const totalItems = Math.max(groupRows.length, 1);
             const newModeOuverture = getNullableNumber(mode_ouverture) || 1;
             const requestedCost = getNumber(cost, current.cost);
             const requestedPercentage = getNumber(percentage, Number(current.percentage || 0));
             const costChanged = Math.abs(requestedCost - Number(current.cost || 0)) > 0.000001;
-            const base = getSuperCostBase(current.ticket_id, newModeOuverture, totalItems);
+            const base = getSuperCostBase(current.ticket_id, newModeOuverture, totalItems, current.group);
             const nextPercentage = costChanged && base > 0
-                ? ((requestedCost * totalItems) / base) * 100
+                ? (requestedCost / base) * 100
                 : requestedPercentage;
 
             db.prepare(`
