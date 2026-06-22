@@ -22,7 +22,7 @@ function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Test />}></Route>
+        <Route path="/test" element={<Test />}></Route>
         <Route path="/file" element={<Import />}></Route>
         {/* backoffice */}
         <Route path="/login" element={<LoginPage />}></Route>
@@ -40,7 +40,7 @@ function AppRouter() {
         </Route>
         {/* frontoffice */}
         <Route element={<FrontOfficeLayout />}>
-          <Route path="/elements" element={<ItemsPage />} />
+          <Route path="/" element={<ItemsPage />} />
           <Route path="/TicketView" element={<TicketKanban />} />
           <Route path="/tickets/create" element={<CreateTicketPage />} />
         </Route>
