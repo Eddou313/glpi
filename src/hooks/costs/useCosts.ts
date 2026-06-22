@@ -51,11 +51,13 @@ export interface TicketCost {
     id?: number;
     ticket_id: number;
     cost: number;
-    id_items?: number;
+    id_items?: number | null;
     category: string | null;
     type_cout: number;
     is_deleted: boolean
     group: string;
+    percentage?: number;
+    mode_ouverture?: number | null;
 }
 export interface TicketCostDisplay extends TicketCost {
     glpiCostPerItem: number;
@@ -99,16 +101,22 @@ export function useConsts() {
         typeCoutId: number,
         category: string | "",
         idItems: number | null,
-        group: string
+        group: string,
+        percentage: number = 0,
+        modeOuverture: number | null = null
     ): Promise<TicketCost> => {
         try {
-            const reponse = await api.post(`/Cost/${ticketId}`, {
-                cost,
-                id_items: idItems,
-                category,
-                type_cout: typeCoutId,
-                group: group
-            });
+            const reponse = await api.post(`/Cost/${ticketId}`,
+                {
+                    cost,
+                    id_items: idItems,
+                    category,
+                    type_cout: typeCoutId,
+                    group,
+                    percentage,
+                    mode_ouverture: modeOuverture
+                });
+
             return reponse.data;
         } catch (erreur: any) {
             console.error("Erreur upsert : " + erreur.message);

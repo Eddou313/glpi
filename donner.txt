@@ -15,3 +15,21 @@ Tickets,mvt,valeur
 1,open,16.222,4
 1,close,900.0,
 1,cancel,,
+
+Alea farany teo:
+
+1-close-50
+2-close-150
+1-open-5% - mode 1
+1-close-49
+1-open-10%-mode 4
+2-open-10%-mode 3
+2-close-300
+
+1,close,0,
+1,open,10,3
+2,open,7.5,4
+2,close,60,
+2,open,10,3
+1,close,100
+

@@ -125,10 +125,10 @@ export function TraiteTickets() {
       const parItem = ouverture / totalItems;
       if (relations.length > 0) {
         for (const item of relations) {
-          await upsert(idTickets, parItem, type_cout_mapping.OUVERTURE, item.itemtype, item.items_id, dateAujourdhui);
+          await upsert(idTickets, parItem, type_cout_mapping.OUVERTURE, item.itemtype, item.items_id, dateAujourdhui,valeur,mode);
         }
       } else {
-        await upsert(idTickets, parItem, type_cout_mapping.OUVERTURE, "Réouverture globale", null, dateAujourdhui);
+        await upsert(idTickets, parItem, type_cout_mapping.OUVERTURE, "Réouverture globale", null, dateAujourdhui,valeur,mode);
       }
       await TicketServiceFront.updateStatus(idTickets, 2);
     }
@@ -144,11 +144,11 @@ export function TraiteTickets() {
 
         if (relations.length > 0) {
           for (const item of relations) {
-            await upsert(idTickets, prixParItems, type_cout_mapping.SUPER_COST, item.itemtype, item.items_id, dateAujourdhui);
+            await upsert(idTickets, prixParItems, type_cout_mapping.SUPER_COST, item.itemtype, item.items_id, dateAujourdhui,100,null);
             await upsert(idTickets, prixParItemsGLPI, type_cout_mapping.GLPI, item.itemtype, item.items_id, dateAujourdhui);
           }
         } else {
-          await upsert(idTickets, valeur, type_cout_mapping.SUPER_COST, "", null, dateAujourdhui);
+          await upsert(idTickets, valeur, type_cout_mapping.SUPER_COST, "", null, dateAujourdhui,100,null);
           await upsert(idTickets, coutTotalGLPI, type_cout_mapping.GLPI, "", null, dateAujourdhui);
         }
         await TicketServiceFront.updateStatus(idTickets, 6, "Clôture via import CSV");

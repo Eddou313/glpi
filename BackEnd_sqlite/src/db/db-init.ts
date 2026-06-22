@@ -34,7 +34,9 @@ db.exec(
     category String,
     type_cout INTEGER NOT NULL,
     is_deleted BOOLEAN DEFAULT 0 ,
-    "group" TEXT 
+    "group" TEXT ,
+    mode_ouverture INTEGER NULL,
+    percentage REAL NOT NULL DEFAULT 0
   );
 `
 );

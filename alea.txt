@@ -1,0 +1,5 @@
+Get-ChildItem "D:\s6\eval\glpi" -Recurse -File | Where-Object {$_.LastWriteTime -gt (Get-Date).AddMinutes(-30)} | Sort-Object LastWriteTime -Descending | Select-Object LastWriteTime, FullName
+
+-cree nouvelle page liste reouverture fait:
+    - bouton pour modifier le reouverture : valeur(pourcentage) et mode avec bouton valider
+    - afaka fafana: bouton supprimer 

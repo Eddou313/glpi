@@ -1,210 +1,502 @@
 import type { Request, Response } from 'express';
 import db from '../db/db.ts';
 
+const TYPE_COUT = {
+    GLPI: 1,
+    SUPER_COST: 2,
+    OUVERTURE: 3,
+} as const;
+
+type CostRow = {
+    id: number;
+    ticket_id: number;
+    cost: number;
+    id_items: number | null;
+    category: string | null;
+    type_cout: number;
+    is_deleted?: boolean | number;
+    group: string | null;
+    percentage?: number | null;
+    mode_ouverture?: number | null;
+};
+
+const COST_SELECT = `
+    SELECT id, ticket_id, cost, id_items, category, type_cout, is_deleted,
+           "group", percentage, mode_ouverture
+    FROM cost
+`;
+
+function getNumber(value: unknown, fallback = 0) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function getNullableNumber(value: unknown) {
+    if (value === null || value === undefined || value === '') return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getSuperCostGroupCount(ticketId: number) {
+    const row = db.prepare(`
+        SELECT COUNT(*) AS total
+        FROM (
+            SELECT COALESCE("group", id) AS group_key
+            FROM cost
+            WHERE ticket_id = ?
+              AND type_cout = ?
+              AND COALESCE(is_deleted, false) = false
+            GROUP BY COALESCE("group", id)
+        )
+    `).get(ticketId, TYPE_COUT.SUPER_COST) as { total?: number } | undefined;
+
+    return Math.max(Number(row?.total || 1), 1);
+}
+
+function getSuperCostBase(ticketId: number, mode: number, totalItems: number) {
+    const limit = Math.max(totalItems, 1);
+
+    if (mode === 2) {
+        const rows = db.prepare(`
+            SELECT cost
+            FROM cost
+            WHERE ticket_id = ?
+              AND type_cout = ?
+              AND COALESCE(is_deleted, false) = false
+            ORDER BY id ASC
+            LIMIT ?
+        `).all(ticketId, TYPE_COUT.SUPER_COST, limit) as CostRow[];
+
+        return rows.reduce((sum, row) => sum + Number(row.cost || 0), 0);
+    }
+
+    if (mode === 3) {
+        const row = db.prepare(`
+            SELECT SUM(cost) AS total
+            FROM cost
+            WHERE ticket_id = ?
+              AND type_cout = ?
+              AND COALESCE(is_deleted, false) = false
+        `).get(ticketId, TYPE_COUT.SUPER_COST) as { total?: number } | undefined;
+
+        return Number(row?.total || 0) / getSuperCostGroupCount(ticketId);
+    }
+
+    if (mode === 4) {
+        const row = db.prepare(`
+            SELECT SUM(cost) AS total
+            FROM cost
+            WHERE ticket_id = ?
+              AND type_cout = ?
+              AND COALESCE(is_deleted, false) = false
+        `).get(ticketId, TYPE_COUT.SUPER_COST) as { total?: number } | undefined;
+
+        return Number(row?.total || 0);
+    }
+
+    const rows = db.prepare(`
+        SELECT cost
+        FROM cost
+        WHERE ticket_id = ?
+          AND type_cout = ?
+          AND COALESCE(is_deleted, false) = false
+        ORDER BY id DESC
+        LIMIT ?
+    `).all(ticketId, TYPE_COUT.SUPER_COST, limit) as CostRow[];
+
+    return rows.reduce((sum, row) => sum + Number(row.cost || 0), 0);
+}
+
+function recalculateOuvertureGroup(ticketId: number, group: string | null) {
+    const ouvertures = db.prepare(`
+        ${COST_SELECT}
+        WHERE ticket_id = ?
+          AND type_cout = ?
+          AND COALESCE("group", '') = COALESCE(?, '')
+          AND COALESCE(is_deleted, false) = false
+        ORDER BY id ASC
+    `).all(ticketId, TYPE_COUT.OUVERTURE, group) as CostRow[];
+
+    if (ouvertures.length === 0) return;
+
+    const first = ouvertures[0]!;
+    const percentage = Number(first.percentage || 0);
+    const mode = Number(first.mode_ouverture || 1);
+    const base = getSuperCostBase(ticketId, mode, ouvertures.length);
+    const totalOuverture = (percentage * base) / 100;
+    const costByItem = totalOuverture / Math.max(ouvertures.length, 1);
+
+    const update = db.prepare(`UPDATE cost SET cost = ? WHERE id = ?`);
+    for (const ouverture of ouvertures) {
+        update.run(costByItem, ouverture.id);
+    }
+}
+
+function recalculateOuverturesForTicket(ticketId: number) {
+    const groups = db.prepare(`
+        SELECT COALESCE("group", '') AS group_key
+        FROM cost
+        WHERE ticket_id = ?
+          AND type_cout = ?
+          AND COALESCE(is_deleted, false) = false
+        GROUP BY COALESCE("group", '')
+    `).all(ticketId, TYPE_COUT.OUVERTURE) as Array<{ group_key: string }>;
+
+    for (const row of groups) {
+        recalculateOuvertureGroup(ticketId, row.group_key || null);
+    }
+}
+
+function listSuperCostsAndOuvertures() {
+    return db.prepare(`
+        ${COST_SELECT}
+        WHERE type_cout IN (?, ?)
+          AND COALESCE(is_deleted, false) = false
+        ORDER BY ticket_id ASC, id ASC
+    `).all(TYPE_COUT.SUPER_COST, TYPE_COUT.OUVERTURE);
+}
+
 export const getAllCost = (req: Request, res: Response) => {
     try {
-        const costs = db.prepare('SELECT id, ticket_id, cost, id_items, category, type_cout , "group" FROM cost').all();
+        const costs = db.prepare(`
+            ${COST_SELECT}
+            WHERE COALESCE(is_deleted, false) = false
+            ORDER BY id DESC
+        `).all();
+
         res.json(costs);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
 };
 
-export const getCostTickets = (req: Request, res: Response) => { 
+export const getCostTickets = (req: Request, res: Response) => {
     const ticket_id = Number(req.params.ticket_id);
     const type_cout = Number(req.query.type_cout);
     const nbrItems = Number(req.query.nbrItems);
+
     try {
         if (isNaN(ticket_id) || isNaN(type_cout)) {
-            return res.status(400).json({ error: "L'identifiant du ticket ou le type de coût est invalide." });
+            return res.status(400).json({ error: "L'identifiant du ticket ou le type de cout est invalide." });
         }
-        const cost = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ? ORDER BY id DESC LIMIT ?').all(ticket_id, type_cout,nbrItems);
+
+        const cost = db.prepare(`
+            SELECT *
+            FROM cost
+            WHERE ticket_id = ?
+              AND type_cout = ?
+              AND COALESCE(is_deleted, false) = false
+            ORDER BY id DESC
+            LIMIT ?
+        `).all(ticket_id, type_cout, nbrItems);
+
         res.json(cost || []);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
 };
 
-export const getCostTicketsPremier = (req: Request, res: Response) => { 
+export const getCostTicketsPremier = (req: Request, res: Response) => {
     const ticket_id = Number(req.params.ticket_id);
     const type_cout = Number(req.query.type_cout);
     const nbrItems = Number(req.query.nbrItems);
+
     try {
         if (isNaN(ticket_id) || isNaN(type_cout)) {
-            return res.status(400).json({ error: "L'identifiant du ticket ou le type de coût est invalide." });
+            return res.status(400).json({ error: "L'identifiant du ticket ou le type de cout est invalide." });
         }
-        const cost = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ? ORDER BY id ASC LIMIT ?').all(ticket_id, type_cout,nbrItems);
+
+        const cost = db.prepare(`
+            SELECT *
+            FROM cost
+            WHERE ticket_id = ?
+              AND type_cout = ?
+              AND COALESCE(is_deleted, false) = false
+            ORDER BY id ASC
+            LIMIT ?
+        `).all(ticket_id, type_cout, nbrItems);
+
         res.json(cost || []);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
 };
 
-export const getCostTicketsAll = (req: Request, res: Response) => { 
+export const getCostTicketsAll = (req: Request, res: Response) => {
     const ticket_id = Number(req.params.ticket_id);
     const type_cout = Number(req.query.type_cout);
-    const nbrItems = Number(req.query.nbrItems);
+
     try {
         if (isNaN(ticket_id) || isNaN(type_cout)) {
-            return res.status(400).json({ error: "L'identifiant du ticket ou le type de coût est invalide." });
+            return res.status(400).json({ error: "L'identifiant du ticket ou le type de cout est invalide." });
         }
-        const cost = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ?').all(ticket_id, type_cout);
+
+        const cost = db.prepare(`
+            SELECT *
+            FROM cost
+            WHERE ticket_id = ?
+              AND type_cout = ?
+              AND COALESCE(is_deleted, false) = false
+        `).all(ticket_id, type_cout);
+
         res.json(cost || []);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
 };
-export const upsterConst = (req: Request, res: Response) => { 
+
+export const upsterConst = (req: Request, res: Response) => {
     try {
         const id = Number(req.params.ticket_id);
-        const { cost, id_items, category, type_cout, group } = req.body;
-        
+        const { cost, id_items, category, type_cout, group, percentage, mode_ouverture } = req.body;
         const typeCoutId = Number(type_cout);
 
         if (isNaN(id) || isNaN(typeCoutId)) {
-            return res.status(400).json({ error: "L'identifiant du ticket ou le type de coût est invalide." });
+            return res.status(400).json({ error: "L'identifiant du ticket ou le type de cout est invalide." });
         }
 
         const costVal = parseFloat(cost) || 0;
-        const itemId = id_items ? parseInt(id_items, 10) : null;
+        const itemId = getNullableNumber(id_items);
         const cat = category || null;
+        const percent = getNumber(percentage, typeCoutId === TYPE_COUT.SUPER_COST ? 100 : 0);
+        const modeOuverture = getNullableNumber(mode_ouverture);
 
-        if(type_cout === 1)
-        {
-            const existingCost = db.prepare('SELECT * FROM cost WHERE ticket_id = ?  AND id_items =? AND type_cout = ?').get(id, id_items,typeCoutId);
+        if (typeCoutId === TYPE_COUT.GLPI) {
+            const existingCost = db.prepare(`
+                SELECT *
+                FROM cost
+                WHERE ticket_id = ?
+                  AND COALESCE(id_items, 0) = COALESCE(?, 0)
+                  AND type_cout = ?
+            `).get(id, itemId, typeCoutId);
+
             if (existingCost) {
                 db.prepare(`
-                    UPDATE cost 
-                    SET cost = ?, id_items = ?, category = ? 
-                    WHERE ticket_id = ? AND type_cout = ?
-                `).run(costVal, itemId, cat, id, typeCoutId);
+                    UPDATE cost
+                    SET cost = ?, id_items = ?, category = ?, "group" = ?, percentage = ?, mode_ouverture = ?
+                    WHERE ticket_id = ?
+                      AND COALESCE(id_items, 0) = COALESCE(?, 0)
+                      AND type_cout = ?
+                `).run(costVal, itemId, cat, group, percent, modeOuverture, id, itemId, typeCoutId);
             } else {
                 db.prepare(`
-                    INSERT INTO cost (ticket_id, cost, id_items, category, type_cout,"group") 
-                    VALUES (?, ?, ?, ?, ?,?)
-                `).run(id, costVal, itemId, cat, typeCoutId, group);
+                    INSERT INTO cost (ticket_id, cost, id_items, category, type_cout, "group", percentage, mode_ouverture)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                `).run(id, costVal, itemId, cat, typeCoutId, group, percent, modeOuverture);
             }
-        }
-        else
-        {
+        } else {
             db.prepare(`
-                INSERT INTO cost (ticket_id, cost, id_items, category, type_cout,"group") 
-                VALUES (?, ?, ?, ?, ?,?)
-            `).run(id, costVal, itemId, cat, typeCoutId, group);
+                INSERT INTO cost (ticket_id, cost, id_items, category, type_cout, "group", percentage, mode_ouverture)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `).run(id, costVal, itemId, cat, typeCoutId, group, percent, modeOuverture);
         }
-        
-        const rep = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ?').get(id, typeCoutId);
+
+        const rep = db.prepare(`
+            SELECT *
+            FROM cost
+            WHERE ticket_id = ?
+              AND type_cout = ?
+            ORDER BY id DESC
+            LIMIT 1
+        `).get(id, typeCoutId);
+
         res.json(rep);
-        
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
 };
 
-export const deleteCost = (req: Request, res: Response) => { 
+export const deleteCost = (req: Request, res: Response) => {
     try {
         const id = Number(req.params.ticket_id);
-        const type_cout = Number(req.body.type_cout); 
+        const type_cout = Number(req.body.type_cout);
+
         if (isNaN(id) || isNaN(type_cout)) {
-            return res.status(400).json({ error: "ID ou type de coût invalide." });
+            return res.status(400).json({ error: "ID ou type de cout invalide." });
         }
-        // const info = db.prepare('DELETE FROM cost WHERE ticket_id = ? ').run(id);
-        const info = db.prepare('UPDATE cost SET is_deleted = true WHERE ticket_id= ? AND type_cout = ?').run(id,type_cout);
-        
+
+        const info = db.prepare(`
+            UPDATE cost
+            SET is_deleted = true
+            WHERE ticket_id = ?
+              AND type_cout = ?
+        `).run(id, type_cout);
+
         if (info.changes === 0) {
-            return res.status(404).json({ error: `Coût avec le type ID ${type_cout} non trouvé pour ce ticket.` });
+            return res.status(404).json({ error: `Cout avec le type ID ${type_cout} non trouve pour ce ticket.` });
         }
-        
+
         res.status(204).send();
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
 };
-export const getIsDelete = (req: Request, res: Response) => { 
+
+export const getIsDelete = (req: Request, res: Response) => {
     const ticket_id = Number(req.params.ticket_id);
     const type_cout = Number(req.body.type_cout);
+
     try {
         if (isNaN(ticket_id) || isNaN(type_cout)) {
-            return res.status(400).json({ error: "L'identifiant du ticket ou le type de coût est invalide." });
+            return res.status(400).json({ error: "L'identifiant du ticket ou le type de cout est invalide." });
         }
-        const cost = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ? AND is_deleted = true ORDER BY id DESC LIMIT 1').get(ticket_id, type_cout);
-        res.json(cost || { message: "Aucun coût trouvé pour ce ticket avec ce type." });
+
+        const cost = db.prepare(`
+            SELECT *
+            FROM cost
+            WHERE ticket_id = ?
+              AND type_cout = ?
+              AND is_deleted = true
+            ORDER BY id DESC
+            LIMIT 1
+        `).get(ticket_id, type_cout);
+
+        res.json(cost || { message: "Aucun cout trouve pour ce ticket avec ce type." });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
 };
-export const deleteCostForce = (req: Request, res: Response) => { 
+
+export const deleteCostForce = (req: Request, res: Response) => {
     try {
         const id = Number(req.params.ticket_id);
-        const { type_cout } = req.body || {}; 
-        const typeCoutNum = Number(type_cout);
-        const nbr_items = Number(req.body.nbr_items); 
-        if (isNaN(id) || isNaN(type_cout)) {
-            return res.status(400).json({ error: "ID ou type de coût invalide." });
+        const typeCoutNum = Number(req.body.type_cout);
+        const nbrItems = Number(req.body.nbr_items);
+
+        if (isNaN(id) || isNaN(typeCoutNum) || isNaN(nbrItems)) {
+            return res.status(400).json({ error: "ID, type de cout ou nombre d'elements invalide." });
         }
+
         const info = db.prepare(`
             DELETE FROM cost
             WHERE id IN (
                 SELECT id
                 FROM cost
                 WHERE ticket_id = ?
-                AND type_cout = ?
+                  AND type_cout = ?
                 ORDER BY id DESC
                 LIMIT ?
             )
-        `).run(id, typeCoutNum, nbr_items);
+        `).run(id, typeCoutNum, nbrItems);
+
         if (info.changes === 0) {
-            return res.status(404).json({ error: `Coût avec le type ID ${typeCoutNum} non trouvé pour ce ticket.` });
+            return res.status(404).json({ error: `Cout avec le type ID ${typeCoutNum} non trouve pour ce ticket.` });
         }
-        
+
+        if (typeCoutNum === TYPE_COUT.SUPER_COST) {
+            recalculateOuverturesForTicket(id);
+        }
+
         res.status(204).send();
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
 };
-export const deleteCostForceAll = (req: Request, res: Response) => { 
+
+export const deleteCostForceAll = (req: Request, res: Response) => {
     try {
-        const { type_cout } = req.body || {}; 
-        const typeCoutNum = Number(type_cout);
-        db.prepare(`
-            DELETE FROM cost
-        `).run();
+        db.prepare(`DELETE FROM cost`).run();
         res.status(204).send();
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
 };
-// export const reouvert = (req: Request, res: Response) => { 
-//     try {
-//         const id = Number(req.params.ticket_id);
-//         const { cost, id_items, category,type_cout } = req.body;
-        
-//         if (isNaN(id)) {
-//             return res.status(400).json({ error: "L'identifiant du ticket est invalide." });
-//         }
 
-//         const costVal = parseFloat(cost) || 0;
-//         const itemId = id_items ? parseInt(id_items, 10) : null;
-//         const cat = category;
-//         const existingCost = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ?').get(id, type_cout);
+export const getSuperCostAndOuvertures = (req: Request, res: Response) => {
+    try {
+        res.json(listSuperCostsAndOuvertures());
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
 
-//         if (existingCost) {
-//             db.prepare(`
-//                 UPDATE cost 
-//                 SET cost = ?, id_items = ?, category = ? 
-//                 WHERE ticket_id = ? AND type_cout = ?
-//             `).run(costVal, itemId, cat, id, type_cout);
-//         } else {
-//             db.prepare(`
-//                 INSERT INTO cost (ticket_id, cost, id_items, category, type_cout) 
-//                 VALUES (?, ?, ?, ?, ?)
-//             `).run(id, costVal, itemId, cat, type_cout);
-//         }
-        
-//         const rep = db.prepare('SELECT * FROM cost WHERE ticket_id = ? AND type_cout = ?').get(id, type_cout);
-//         res.json(rep);
-        
-//     } catch (error: any) {
-//         res.status(500).json({ error: error.message });
-//     }
-// };
+export const updateSuperCostOrReouverture = (req: Request, res: Response) => {
+    try {
+        const id = Number(req.params.id);
+        const { cost, percentage, mode_ouverture } = req.body;
+
+        if (isNaN(id)) {
+            return res.status(400).json({ error: "ID invalide." });
+        }
+
+        const current = db.prepare(`
+            ${COST_SELECT}
+            WHERE id = ?
+              AND type_cout IN (?, ?)
+        `).get(id, TYPE_COUT.SUPER_COST, TYPE_COUT.OUVERTURE) as CostRow | undefined;
+
+        if (!current) {
+            return res.status(404).json({ error: "Ligne introuvable." });
+        }
+
+        if (current.type_cout === TYPE_COUT.SUPER_COST) {
+            db.prepare(`
+                UPDATE cost
+                SET cost = ?, percentage = 100, mode_ouverture = NULL
+                WHERE id = ?
+            `).run(getNumber(cost), id);
+
+            recalculateOuverturesForTicket(current.ticket_id);
+        }
+
+        if (current.type_cout === TYPE_COUT.OUVERTURE) {
+            const groupRows = db.prepare(`
+                ${COST_SELECT}
+                WHERE ticket_id = ?
+                  AND type_cout = ?
+                  AND COALESCE("group", '') = COALESCE(?, '')
+                  AND COALESCE(is_deleted, false) = false
+            `).all(current.ticket_id, TYPE_COUT.OUVERTURE, current.group) as CostRow[];
+
+            const totalItems = Math.max(groupRows.length, 1);
+            const newModeOuverture = getNullableNumber(mode_ouverture) || 1;
+            const requestedCost = getNumber(cost, current.cost);
+            const requestedPercentage = getNumber(percentage, Number(current.percentage || 0));
+            const costChanged = Math.abs(requestedCost - Number(current.cost || 0)) > 0.000001;
+            const base = getSuperCostBase(current.ticket_id, newModeOuverture, totalItems);
+            const nextPercentage = costChanged && base > 0
+                ? ((requestedCost * totalItems) / base) * 100
+                : requestedPercentage;
+
+            db.prepare(`
+                UPDATE cost
+                SET percentage = ?, mode_ouverture = ?
+                WHERE ticket_id = ?
+                  AND type_cout = ?
+                  AND COALESCE("group", '') = COALESCE(?, '')
+                  AND COALESCE(is_deleted, false) = false
+            `).run(nextPercentage, newModeOuverture, current.ticket_id, TYPE_COUT.OUVERTURE, current.group);
+
+            recalculateOuvertureGroup(current.ticket_id, current.group);
+        }
+
+        res.json(listSuperCostsAndOuvertures());
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const deleteOuvertureById = (req: Request, res: Response) => {
+    try {
+        const id = Number(req.params.id);
+
+        if (isNaN(id)) {
+            return res.status(400).json({ error: "ID d'ouverture invalide." });
+        }
+
+        const info = db.prepare(`
+            UPDATE cost
+            SET is_deleted = true
+            WHERE id = ?
+              AND type_cout = ?
+        `).run(id, TYPE_COUT.OUVERTURE);
+
+        if (info.changes === 0) {
+            return res.status(404).json({ error: "Ouverture introuvable." });
+        }
+
+        res.status(204).send();
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
