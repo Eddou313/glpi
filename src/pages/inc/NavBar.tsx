@@ -12,6 +12,10 @@ const NAV_LINKS = [
   { to: '/Parameter',    label: 'Paramettre',            icon: Settings       },
   { to: '/Costs',    label: 'Costs',            icon: Coins       },
   { to: '/Import4',    label: 'Import4',            icon: FileInput       },
+<<<<<<< Updated upstream
+=======
+  { to: '/SuperOuverture',    label: 'SuperOuverture',            icon: Coins       },
+>>>>>>> Stashed changes
 
 ];
 
