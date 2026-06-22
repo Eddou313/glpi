@@ -116,10 +116,6 @@ export function SuperOuverturePage() {
     return (
         <div className="super-openings-page">
             <div className="super-openings-header">
-                <div>
-                    <h1>Liste des reouvertures et supercosts</h1>
-                    <p>Vue regroupee par ticket, type et batch.</p>
-                </div>
 
                 <button className="super-openings-refresh" onClick={refresh} disabled={loading}>
                     Actualiser
