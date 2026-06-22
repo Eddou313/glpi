@@ -4,6 +4,7 @@ import type { GLPITicketListe, GLPITicketDetail } from "../../types/tickets/tick
 import { TicketServiceFront } from "../FrontOffice/tickets/useCreateTickets";
 import { useCostTicketsGLPI } from "../costs/useCostTicketsGLPI";
 import { obtenirDateFormatee, type_cout_mapping, useConsts } from "../costs/useCosts";
+import { api } from "../../api/https";
 
 export interface traitementTickets {
   Tickets: string;
@@ -23,7 +24,33 @@ export const TicketService = {
 
   getById: (id: number) =>
     glpiFetch<GLPITicketDetail>("GET", `Assistance/Ticket/${id}`),
+
 };
+export interface Fond {
+  id: number;
+  pourcentageFond: number;
+}
+
+function parseNombre(value: unknown, fallback = 0): number {
+  if (typeof value === "string") {
+    const normalized = value.trim().replace(",", ".");
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+async function getFondPourcentage(): Promise<number> {
+  try {
+    const reponse = await api.get<Fond>("/Cost/fond");
+    return parseNombre(reponse.data?.pourcentageFond, 30);
+  } catch (error: any) {
+    console.error("Erreur chargement fond :", error.message);
+    return 30;
+  }
+}
 
 export function useTickets(initialPage = 1, limit = 10) {
   const [tickets, setTickets] = useState<GLPITicketListe[]>([]);
@@ -31,6 +58,7 @@ export function useTickets(initialPage = 1, limit = 10) {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(initialPage);
   const [hasMore, setHasMore] = useState(true); // Permet de savoir s'il y a une page suivante
+
 
   const load = useCallback(async (currentPage: number) => {
     try {
@@ -85,32 +113,27 @@ export function TraiteTickets() {
 
   const traiterLigneTicket = async (idTickets: number, row: traitementTickets, mode: number) => {
     const dateAujourdhui = obtenirDateFormatee();
+    const modeOuverture = [1, 2, 3, 4].includes(Number(mode)) ? Number(mode) : 1;
 
     console.log("id : " + idTickets);
-    const valeur = Number(row.valeur);
+    const valeur = parseNombre(row.valeur);
     const relations = await TicketServiceFront.getLinkedItems(idTickets);
-    const reelGLPI = await getCostByTickets(idTickets);
-    const coutTotalGLPI = reelGLPI?.cost_Total || 0;
-
     const totalItems = relations.length > 0 ? relations.length : 1;
-
-    const prixParItems = valeur / totalItems;
-    const prixParItemsGLPI = coutTotalGLPI / totalItems;
 
     if (row.mvt === "open") {
       let reelCost = 0;
-      if (mode === 2) {
+      if (modeOuverture === 2) {
         const firstSuperCost = await getByTicketsFirst(idTickets, type_cout_mapping.SUPER_COST, totalItems);
         reelCost = Number(firstSuperCost?.cost || 0);
       }
-      else if (mode === 3) {
+      else if (modeOuverture === 3) {
         const MoyenneSuperCost = await getByTicketsAll(idTickets, type_cout_mapping.SUPER_COST, totalItems);
         const total = await getByTicketsAllTotal(idTickets, type_cout_mapping.SUPER_COST, totalItems);
         reelCost = Number(MoyenneSuperCost?.cost || 0) / Number(total ? total : 1);
         console.log("moyenne" + MoyenneSuperCost?.cost);
         console.log("mode 3:" + reelCost);
       }
-      else if (mode === 4) {
+      else if (modeOuverture === 4) {
         const allSuperCost = await getByTicketsAll(idTickets, type_cout_mapping.SUPER_COST, totalItems);
         reelCost = Number(allSuperCost?.cost || 0);
       }
@@ -121,14 +144,33 @@ export function TraiteTickets() {
       if (reelCost < 0) {
         reelCost = 0;
       }
-      const ouverture = (valeur * Number(reelCost)) / 100;
+
+      const pourcentageFond = await getFondPourcentage();
+      const tousSupercostDessus = await getByTicketsAll(idTickets, type_cout_mapping.SUPER_COST, totalItems);
+      const totalSupercostDessus = Number(tousSupercostDessus?.cost || 0);
+      const valeurFond = (pourcentageFond * totalSupercostDessus) / 100; 
+      
+      const ouvertureCalculee = (valeur * Number(reelCost)) / 100;
+      const ouverture = Math.min(ouvertureCalculee, valeurFond);
       const parItem = ouverture / totalItems;
+
+      if (!Number.isFinite(parItem)) {
+        throw new Error("Calcul de reouverture invalide.");
+      }
+
+      console.log("reouverture base supercost :", reelCost);
+      console.log("reouverture pourcentage :", valeur);
+      console.log("reouverture pourcentage fond :", pourcentageFond);
+      console.log("reouverture total supercost dessus :", totalSupercostDessus);
+      console.log("reouverture valeur fond :", valeurFond);
+      console.log("reouverture inseree :", ouverture);
+
       if (relations.length > 0) {
         for (const item of relations) {
-          await upsert(idTickets, parItem, type_cout_mapping.OUVERTURE, item.itemtype, item.items_id, dateAujourdhui,valeur,mode);
+          await upsert(idTickets, parItem, type_cout_mapping.OUVERTURE, item.itemtype, item.items_id, dateAujourdhui, valeur, modeOuverture);
         }
       } else {
-        await upsert(idTickets, parItem, type_cout_mapping.OUVERTURE, "Réouverture globale", null, dateAujourdhui,valeur,mode);
+        await upsert(idTickets, parItem, type_cout_mapping.OUVERTURE, "Réouverture globale", null, dateAujourdhui, valeur, modeOuverture);
       }
       await TicketServiceFront.updateStatus(idTickets, 2);
     }
@@ -139,16 +181,21 @@ export function TraiteTickets() {
     }
     else {
       try {
+        const reelGLPI = await getCostByTickets(idTickets);
+        const coutTotalGLPI = reelGLPI?.cost_Total || 0;
+        const prixParItems = valeur / totalItems;
+        const prixParItemsGLPI = coutTotalGLPI / totalItems;
+
         console.log("cout csv :", valeur);
         console.log("cout reel GLPI par items :", prixParItemsGLPI);
 
         if (relations.length > 0) {
           for (const item of relations) {
-            await upsert(idTickets, prixParItems, type_cout_mapping.SUPER_COST, item.itemtype, item.items_id, dateAujourdhui,100,null);
+            await upsert(idTickets, prixParItems, type_cout_mapping.SUPER_COST, item.itemtype, item.items_id, dateAujourdhui, 100, null);
             await upsert(idTickets, prixParItemsGLPI, type_cout_mapping.GLPI, item.itemtype, item.items_id, dateAujourdhui);
           }
         } else {
-          await upsert(idTickets, valeur, type_cout_mapping.SUPER_COST, "", null, dateAujourdhui,100,null);
+          await upsert(idTickets, valeur, type_cout_mapping.SUPER_COST, "", null, dateAujourdhui, 100, null);
           await upsert(idTickets, coutTotalGLPI, type_cout_mapping.GLPI, "", null, dateAujourdhui);
         }
         await TicketServiceFront.updateStatus(idTickets, 6, "Clôture via import CSV");

@@ -22,4 +22,15 @@ if (costColumns.length > 0 && !hasCostColumn('percentage')) {
   db.prepare(`ALTER TABLE cost ADD COLUMN percentage REAL NOT NULL DEFAULT 0`).run();
 }
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS fond (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pourcentageFond REAL NOT NULL DEFAULT 30
+  );
+
+  INSERT INTO fond (id, pourcentageFond)
+  VALUES (1, 30)
+  ON CONFLICT(id) DO NOTHING;
+`);
+
 export default db;

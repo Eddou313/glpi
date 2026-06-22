@@ -57,7 +57,11 @@ export const TicketServiceFront = {
     });
 
     if (contenuSuivi && contenuSuivi.trim() !== "") {
-      await TicketServiceFront.insertSuivie(ticketId, contenuSuivi);
+      try {
+        await TicketServiceFront.insertSuivie(ticketId, contenuSuivi);
+      } catch (error) {
+        console.warn("Suivi GLPI non ajoute :", error);
+      }
     }
     return tickets;
   },
@@ -76,18 +80,27 @@ export const TicketServiceFront = {
       ]
     });
     if (contenu && contenu.trim() !== "") {
-      await TicketServiceFront.insertSuivie(ticketId, contenu);
+      try {
+        await TicketServiceFront.insertSuivie(ticketId, contenu);
+      } catch (error) {
+        console.warn("Suivi GLPI non ajoute :", error);
+      }
     }
     return tickets;
   },
   insertSuivie: (ticketId: number, content: string) => {
+    const trimmedContent = content.trim();
+    if (!trimmedContent) {
+      return Promise.resolve(null);
+    }
+
     return glpiPostV1<any>(
-      `/Ticket/${ticketId}/ITILFollowup`,
+      `Ticket/${ticketId}/ITILFollowup`,
       {
         input: {
           itemtype: "Ticket",
           items_id: ticketId,
-          content: content,
+          content: trimmedContent,
           is_private: false
         }
       }

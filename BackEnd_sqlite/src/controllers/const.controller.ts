@@ -27,6 +27,11 @@ const COST_SELECT = `
 `;
 
 function getNumber(value: unknown, fallback = 0) {
+    if (typeof value === 'string') {
+        const parsed = Number(value.trim().replace(',', '.'));
+        return Number.isFinite(parsed) ? parsed : fallback;
+    }
+
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : fallback;
 }
@@ -39,6 +44,17 @@ function getNullableNumber(value: unknown) {
 
 function getBatch(value: string | null) {
     return value || '';
+}
+
+function getPourcentageFond() {
+    const row = db.prepare(`
+        SELECT pourcentageFond
+        FROM fond
+        ORDER BY id ASC
+        LIMIT 1
+    `).get() as { pourcentageFond?: number } | undefined;
+
+    return getNumber(row?.pourcentageFond, 30);
 }
 
 function getRowsByBatch(ticketId: number, typeCout: number, group: string | null) {
@@ -155,6 +171,26 @@ function getSuperCostBase(ticketId: number, mode: number, totalItems: number, ou
     return rows.reduce((sum, row) => sum + Number(row.cost || 0), 0);
 }
 
+function getTotalSuperCostDessus(ticketId: number, ouvertureGroup?: string | null) {
+    const groupLimit = getBatch(ouvertureGroup || null);
+    const groupFilter = groupLimit
+        ? 'AND COALESCE("group", \'\') <= ?'
+        : '';
+    const groupParams = groupLimit ? [groupLimit] : [];
+
+    const row = db.prepare(`
+        SELECT SUM(cost) AS total
+        FROM cost
+        WHERE ticket_id = ?
+          AND type_cout = ?
+          AND cost > 0
+          AND COALESCE(is_deleted, false) = false
+          ${groupFilter}
+    `).get(ticketId, TYPE_COUT.SUPER_COST, ...groupParams) as { total?: number } | undefined;
+
+    return Number(row?.total || 0);
+}
+
 function recalculateOuvertureGroup(ticketId: number, group: string | null) {
     const ouvertures = db.prepare(`
         ${COST_SELECT}
@@ -171,7 +207,10 @@ function recalculateOuvertureGroup(ticketId: number, group: string | null) {
     const percentage = Number(first.percentage || 0);
     const mode = Number(first.mode_ouverture || 1);
     const base = getSuperCostBase(ticketId, mode, ouvertures.length, first.group);
-    const totalOuverture = (percentage * base) / 100;
+    const totalOuvertureCalcule = (percentage * base) / 100;
+    const totalSuperCostDessus = getTotalSuperCostDessus(ticketId, first.group);
+    const plafond = (totalSuperCostDessus * getPourcentageFond()) / 100;
+    const totalOuverture = Math.min(totalOuvertureCalcule, plafond);
     const costByItem = totalOuverture / Math.max(ouvertures.length, 1);
 
     const update = db.prepare(`UPDATE cost SET cost = ? WHERE id = ?`);
@@ -433,21 +472,28 @@ export const deleteCostForce = (req: Request, res: Response) => {
             return res.status(400).json({ error: "ID, type de cout ou nombre d'elements invalide." });
         }
 
-        const info = db.prepare(`
-            DELETE FROM cost
-            WHERE id IN (
-                SELECT id
-                FROM cost
-                WHERE ticket_id = ?
-                  AND type_cout = ?
-                ORDER BY id DESC
-                LIMIT ?
-            )
-        `).run(id, typeCoutNum, nbrItems);
+        const rows = db.prepare(`
+            SELECT id
+            FROM cost
+            WHERE ticket_id = ?
+              AND type_cout = ?
+              AND COALESCE(is_deleted, false) = false
+            ORDER BY id DESC
+            LIMIT ?
+        `).all(id, typeCoutNum, nbrItems) as Array<{ id: number }>;
 
-        if (info.changes === 0) {
-            return res.status(404).json({ error: `Cout avec le type ID ${typeCoutNum} non trouve pour ce ticket.` });
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Aucun cout a annuler" });
         }
+
+        const ids = rows.map((row) => row.id);
+        const placeholders = ids.map(() => '?').join(',');
+
+        db.prepare(`
+            UPDATE cost
+            SET is_deleted = true
+            WHERE id IN (${placeholders})
+        `).run(...ids);
 
         if (typeCoutNum === TYPE_COUT.SUPER_COST) {
             recalculateOuverturesForTicket(id);
@@ -562,6 +608,101 @@ export const deleteOuvertureById = (req: Request, res: Response) => {
         }
 
         res.status(204).send();
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const deleteSuperCostOrReouverture = (req: Request, res: Response) => {
+    try {
+        const id = Number(req.params.id);
+
+        if (isNaN(id)) {
+            return res.status(400).json({ error: "ID invalide." });
+        }
+
+        const current = db.prepare(`
+            ${COST_SELECT}
+            WHERE id = ?
+              AND type_cout IN (?, ?)
+              AND COALESCE(is_deleted, false) = false
+        `).get(id, TYPE_COUT.SUPER_COST, TYPE_COUT.OUVERTURE) as CostRow | undefined;
+
+        if (!current) {
+            return res.status(404).json({ error: "Ligne introuvable." });
+        }
+
+        db.prepare(`
+            UPDATE cost
+            SET is_deleted = true
+            WHERE ticket_id = ?
+              AND type_cout = ?
+              AND COALESCE("group", '') = COALESCE(?, '')
+              AND COALESCE(is_deleted, false) = false
+        `).run(current.ticket_id, current.type_cout, current.group);
+
+        if (current.type_cout === TYPE_COUT.SUPER_COST) {
+            recalculateOuverturesAfterGroup(current.ticket_id, current.group);
+        }
+
+        res.json(listSuperCostsAndOuvertures());
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const retablir = (req: Request, res: Response) => {
+    try {
+        const id = Number(req.params.id);
+
+        if (isNaN(id)) {
+            return res.status(400).json({ error: "ID invalide." });
+        }
+
+        const current = db.prepare(`
+            ${COST_SELECT}
+            WHERE id = ?
+              AND type_cout IN (?, ?)
+              AND COALESCE(is_deleted, false) = true
+        `).get(id, TYPE_COUT.SUPER_COST, TYPE_COUT.OUVERTURE) as CostRow | undefined;
+
+        if (!current) {
+            return res.status(404).json({ error: "Ligne annulee introuvable." });
+        }
+
+        db.prepare(`
+            UPDATE cost
+            SET is_deleted = false
+            WHERE ticket_id = ?
+              AND type_cout = ?
+              AND COALESCE("group", '') = COALESCE(?, '')
+              AND COALESCE(is_deleted, false) = true
+        `).run(current.ticket_id, current.type_cout, current.group);
+
+        if (current.type_cout === TYPE_COUT.SUPER_COST) {
+            recalculateOuverturesAfterGroup(current.ticket_id, current.group);
+        }
+
+        if (current.type_cout === TYPE_COUT.OUVERTURE) {
+            recalculateOuvertureGroup(current.ticket_id, current.group);
+        }
+
+        res.json(listSuperCostsAndOuvertures());
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export const getAllCostCancel = (req: Request, res: Response) => {
+    try {
+        const costs = db.prepare(`
+            ${COST_SELECT}
+            WHERE type_cout IN (?, ?)
+              AND COALESCE(is_deleted, false) = true
+            ORDER BY ticket_id ASC, COALESCE("group", '') ASC, id ASC
+        `).all(TYPE_COUT.SUPER_COST, TYPE_COUT.OUVERTURE);
+
+        res.json(costs);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }

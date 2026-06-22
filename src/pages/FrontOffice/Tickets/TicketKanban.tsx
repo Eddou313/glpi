@@ -491,9 +491,9 @@ export function TicketKanban() {
                                 className="ticket-form__submit"
                                 style={{ backgroundColor: '#22c55e', color: 'white' }}
                                 onClick={async () => {
-                                    if (!commentaire.trim()) {
-                                        return alert("Le commentaire de clôture est obligatoire.");
-                                    }
+                                    // if (!commentaire.trim()) {
+                                    //     return alert("Le commentaire de clôture est obligatoire.");
+                                    // }
                                     if (!prixCloture) {
                                         return alert("Le prix de clôture est obligatoire.");
                                     }
@@ -503,7 +503,7 @@ export function TicketKanban() {
                                                 Tickets: String(selectedTicket.id),
                                                 mvt: "close",
                                                 valeur: String(prixCloture)
-                                            } as traitementTickets,modeChoisie?modeChoisie:0);
+                                            } as traitementTickets, modeChoisie || 1);
                                         } catch (error: any) {
                                             console.error("Erreur lors de la clôture des coûts : " + error.message);
                                             alert("Erreur lors du calcul ou de l'enregistrement des coûts.");
@@ -559,12 +559,11 @@ export function TicketKanban() {
                                 type="button"
                                 className="btn-secondary"
                                 onClick={async () => {
-                                    const totalItems = linkedItems.length > 0 ? linkedItems.length : 1;
                                     await traiterLigneTicket(selectedTicket.id, {
                                         Tickets: String(selectedTicket.id),
                                         mvt: "cancel",
                                         valeur: String(0)
-                                    } as traitementTickets,modeChoisie?modeChoisie:0);
+                                    } as traitementTickets, modeChoisie || 1);
                                     await proceedStatusUpdate(selectedTicket, 2);
                                     setModeChoisie(null);
                                     setIsClosed(false);
@@ -582,15 +581,19 @@ export function TicketKanban() {
                                 style={{ backgroundColor: '#22c55e', color: 'white' }}
                                 onClick={async () => {
                                     if (pendingStatusId !== null) {
+                                        let ouvertureOk = false;
                                         try {
                                             await traiterLigneTicket(selectedTicket.id, {
                                                 Tickets: String(selectedTicket.id),
                                                 mvt: "open",
                                                 valeur: String(pourcentage)
-                                            } as traitementTickets,modeChoisie?modeChoisie:0);
+                                            } as traitementTickets, modeChoisie || 1);
+                                            ouvertureOk = true;
                                         } catch (error: any) {
                                             console.error("Erreur lors de l'application des coûts de réouverture :", error.message);
+                                            alert("Erreur lors de l'application des coûts de réouverture : " + error.message);
                                         } finally {
+                                            if (!ouvertureOk) return;
                                             await proceedStatusUpdate(selectedTicket, pendingStatusId, "Ticket réouvert avec application du pourcentage.");
                                             setIsClosed(false);
                                             setReouvre(false);

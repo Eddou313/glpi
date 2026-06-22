@@ -1,5 +1,9 @@
 Get-ChildItem "D:\s6\eval\glpi" -Recurse -File | Where-Object {$_.LastWriteTime -gt (Get-Date).AddMinutes(-30)} | Sort-Object LastWriteTime -Descending | Select-Object LastWriteTime, FullName
-
--cree nouvelle page liste reouverture fait:
+1-cree nouvelle page liste reouverture fait:
     - bouton pour modifier le reouverture : valeur(pourcentage) et mode avec bouton valider
     - afaka fafana: bouton supprimer 
+
+2-sur le meme pages, ajoute une liste tickets annuler avec bouton retablir , si il est retablir alors il comporte son etat dernier de meme place ordre dans le base , il faut recalculer le supercost ,  
+    une nouvelle paramettre general : plafond reouverture stocker dans sqlite en valeur en pourcentage,
+    exemple plafond = 20% , lors de la reouverture on a supercost total = 100  et que le pourcentage d ouverture est 15% ,
+    alors le fond total c est 20   et apres traitemnet par mode j ai obtenu 25 alors le cout inseret change 20 (<=fond total) ne depasse pas le fond

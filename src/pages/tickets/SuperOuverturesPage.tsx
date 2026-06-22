@@ -22,8 +22,8 @@ type EditState = {
     modeOuverture: string;
 };
 
-function formatNumber(value: number) {
-    return value.toLocaleString("fr-FR", {
+function formatNumber(value: number | undefined | null) {
+    return Number(value || 0).toLocaleString("fr-FR", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     });
@@ -78,14 +78,24 @@ function buildBatchRows(rows: TicketCost[]) {
 }
 
 export function SuperOuverturePage() {
-    const { rows, loading, error, refresh, update } = useSuperOuvertures();
+    const {
+        rows,
+        cancelledRows,
+        loading,
+        error,
+        refreshAll,
+        update,
+        remove,
+        restoreCancelled,
+    } = useSuperOuvertures();
     const [edit, setEdit] = useState<EditState | null>(null);
 
     useEffect(() => {
-        refresh();
-    }, [refresh]);
+        refreshAll();
+    }, [refreshAll]);
 
     const batchRows = useMemo(() => buildBatchRows(rows), [rows]);
+    const cancelledBatchRows = useMemo(() => buildBatchRows(cancelledRows), [cancelledRows]);
 
     const openEdit = (row: BatchRow) => {
         setEdit({
@@ -116,8 +126,12 @@ export function SuperOuverturePage() {
     return (
         <div className="super-openings-page">
             <div className="super-openings-header">
+                <div>
+                    <h1>Supercosts et reouvertures</h1>
+                    <p>Liste regroupee par ticket, type et batch.</p>
+                </div>
 
-                <button className="super-openings-refresh" onClick={refresh} disabled={loading}>
+                <button className="super-openings-refresh" onClick={refreshAll} disabled={loading}>
                     Actualiser
                 </button>
             </div>
@@ -154,10 +168,66 @@ export function SuperOuverturePage() {
                                     <td>{row.group || "-"}</td>
                                     <td>{row.count}</td>
                                     <td className="super-openings-number">{formatNumber(row.totalCost)}</td>
-                                    <td className="super-openings-number">{isOuverture ? `${formatNumber(row.percentage)} %` : "-"}</td>
+                                    <td className="super-openings-number">
+                                        {isOuverture ? `${formatNumber(row.percentage)} %` : "-"}
+                                    </td>
                                     <td>{isOuverture ? row.mode_ouverture || 1 : "-"}</td>
                                     <td>
-                                        <button className="super-openings-edit" onClick={() => openEdit(row)}>Modifier</button>
+                                        <div className="super-openings-actions">
+                                            <button className="super-openings-edit" onClick={() => openEdit(row)}>
+                                                Modifier
+                                            </button>
+                                            <button className="super-openings-delete" onClick={() => remove(row.firstId)}>
+                                                Supprimer
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+
+            <h2 className="super-openings-section-title">Tickets annules</h2>
+
+            <div className="super-openings-table-wrap">
+                <table className="super-openings-table">
+                    <thead>
+                        <tr>
+                            <th>Ticket</th>
+                            <th>Type</th>
+                            <th>Group</th>
+                            <th>Nombre lignes</th>
+                            <th>Cout total</th>
+                            <th>Pourcentage</th>
+                            <th>Mode ouverture</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {cancelledBatchRows.map((row) => {
+                            const isOuverture = row.type_cout === type_cout_mapping.OUVERTURE;
+
+                            return (
+                                <tr key={`cancelled-${row.key}`}>
+                                    <td className="super-openings-id">#{row.ticket_id}</td>
+                                    <td>
+                                        <span className={isOuverture ? "super-openings-badge super-openings-badge--open" : "super-openings-badge"}>
+                                            {getTypeLabel(row.type_cout)}
+                                        </span>
+                                    </td>
+                                    <td>{row.group || "-"}</td>
+                                    <td>{row.count}</td>
+                                    <td className="super-openings-number">{formatNumber(row.totalCost)}</td>
+                                    <td className="super-openings-number">
+                                        {isOuverture ? `${formatNumber(row.percentage)} %` : "-"}
+                                    </td>
+                                    <td>{isOuverture ? row.mode_ouverture || 1 : "-"}</td>
+                                    <td>
+                                        <button className="super-openings-restore" onClick={() => restoreCancelled(row.firstId)}>
+                                            Retablir
+                                        </button>
                                     </td>
                                 </tr>
                             );
@@ -167,10 +237,7 @@ export function SuperOuverturePage() {
             </div>
 
             {edit && (
-                <div
-                    className="super-openings-modal-overlay"
-                    onClick={closeEdit}
-                >
+                <div className="super-openings-modal-overlay" onClick={closeEdit}>
                     <div className="super-openings-modal" onClick={(event) => event.stopPropagation()}>
                         <div className="super-openings-modal-header">
                             <h2>Modifier {getTypeLabel(edit.row.type_cout)}</h2>

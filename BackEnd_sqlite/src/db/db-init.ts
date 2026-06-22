@@ -40,5 +40,17 @@ db.exec(
   );
 `
 );
+db.exec(
+`
+  CREATE TABLE IF NOT EXISTS fond (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     pourcentageFond REAL NOT NULL DEFAULT 30
+  );
+
+  INSERT INTO fond (id, pourcentageFond)
+  VALUES (1, 30)
+  ON CONFLICT(id) DO NOTHING;
+`
+);
 console.log("creation fait !");
 process.exit(0);
